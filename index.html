@@ -39,7 +39,6 @@
   <!-- ================= VISTAS PRINCIPALES ================= -->
   <main id="main-content" style="display: none;">
     
-    <!-- VISTA 1: DASHBOARD (INICIO) -->
     <section id="vista-dashboard" class="vista activa">
       <div class="balance-card">
         <h3>Balance del Mes</h3>
@@ -73,7 +72,6 @@
       </div>
     </section>
 
-    <!-- VISTA 2: INVENTARIO -->
     <section id="vista-inventario" class="vista">
       <div class="vista-header">
         <h2><i class="fas fa-boxes"></i> Inventario</h2>
@@ -83,7 +81,6 @@
       <ul id="ul-stock" class="lista-visualizacion"></ul>
     </section>
 
-    <!-- VISTA 3: TALLER -->
     <section id="vista-taller" class="vista">
       <div class="vista-header">
         <h2><i class="fas fa-tools"></i> Taller</h2>
@@ -92,7 +89,6 @@
       <ul id="ul-taller" class="lista-visualizacion"></ul>
     </section>
 
-    <!-- VISTA 4: DEUDAS Y SERVICIOS -->
     <section id="vista-deudas" class="vista">
       <div class="vista-header">
         <h2><i class="fas fa-file-invoice-dollar"></i> Obligaciones</h2>
@@ -101,7 +97,6 @@
       <ul id="ul-deudas" class="lista-visualizacion"></ul>
     </section>
 
-    <!-- VISTA 5: CAJA (HISTORIAL) -->
     <section id="vista-caja" class="vista">
       <div class="vista-header">
         <h2><i class="fas fa-cash-register"></i> Historial de Caja</h2>
@@ -112,16 +107,18 @@
 
   </main>
 
-  <!-- ================= MODALES DE FORMULARIOS (Para Cargar/Editar) ================= -->
+  <!-- ================= MODALES DE FORMULARIOS ================= -->
   
   <div id="modal-venta" class="modal"><div class="modal-content"><span class="close" onclick="cerrarModal('modal-venta')">&times;</span><h2><i class="fas fa-shopping-cart"></i> Registrar Venta</h2>
       <form id="form-venta" onsubmit="enviarVenta(event)">
         <label class="form-label">Producto a Vender</label>
         <select id="ven-producto" required onchange="autocompletarPrecio()"><option value="">Cargando...</option></select>
-        <div style="display:flex; gap:10px;">
-          <div style="width:30%"><label class="form-label">Cant.</label><input type="number" id="ven-cantidad" required value="1"></div>
-          <div style="width:70%"><label class="form-label">Precio Final</label><input type="number" id="ven-total" required></div>
+        
+        <div class="form-row">
+          <div class="col-1"><label class="form-label">Cant.</label><input type="number" id="ven-cantidad" required value="1"></div>
+          <div class="col-2"><label class="form-label">Precio Final</label><input type="number" id="ven-total" required></div>
         </div>
+
         <label class="form-label">Método</label>
         <select id="ven-metodo" required><option value="Efectivo">Efectivo</option><option value="Transferencia">Transferencia</option></select>
         <button type="submit" class="btn-submit" id="btn-ven">Confirmar Venta</button>
@@ -134,10 +131,12 @@
         <label class="form-label">Descripción</label><input type="text" id="inv-desc" required>
         <label class="form-label">Costo (Gs.)</label><input type="number" id="inv-costo" required>
         <label class="form-label">Precio de Venta (Gs.)</label><input type="number" id="inv-precio" required>
-        <div style="display:flex; gap:10px;">
-          <div style="width:50%"><label class="form-label">Cantidad</label><input type="number" id="inv-stock" required></div>
-          <div style="width:50%"><label class="form-label">Aviso Mín.</label><input type="number" id="inv-min" required value="0"></div>
+        
+        <div class="form-row">
+          <div class="col-1"><label class="form-label">Cantidad</label><input type="number" id="inv-stock" required></div>
+          <div class="col-1"><label class="form-label">Aviso Mín.</label><input type="number" id="inv-min" required value="0"></div>
         </div>
+
         <label style="font-size: 0.85rem; font-weight:bold; margin-top:10px; display:flex; align-items:center; gap:8px;"><input type="checkbox" id="inv-gasto" style="width:auto;"> Restar costo de la Caja</label>
         <button type="submit" class="btn-submit" id="btn-inv">Agregar al Stock</button>
       </form>
@@ -168,15 +167,18 @@
       <form id="form-deuda" onsubmit="enviarDeuda(event)">
         <label class="form-label">Categoría</label><select id="deu-categoria" required><option value="Servicio">Servicio (Luz/Internet)</option><option value="Préstamo">Préstamo</option><option value="Tarjeta">Tarjeta de Crédito</option></select>
         <label class="form-label">Acreedor (Ej. ANDE, Itaú)</label><input type="text" id="deu-acreedor" required>
+        
         <div style="display:flex; flex-direction:column; gap:8px; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; margin-top:5px;">
            <label class="form-label" style="color:#3b82f6;">Si es préstamo o tarjeta (Opcional):</label>
            <label class="form-label" style="margin-top:0;">Deuda Total a Pagar</label><input type="number" id="deu-monto-total">
-           <div style="display:flex; gap:10px;">
-             <div style="width:50%"><label class="form-label">Cuota N°</label><input type="number" id="deu-cuota-actual"></div>
-             <div style="width:50%"><label class="form-label">De cuantas?</label><input type="number" id="deu-cuota-total"></div>
+           
+           <div class="form-row">
+             <div class="col-1"><label class="form-label">Cuota N°</label><input type="number" id="deu-cuota-actual"></div>
+             <div class="col-1"><label class="form-label">De cuantas?</label><input type="number" id="deu-cuota-total"></div>
            </div>
         </div>
-        <label class="form-label">Monto Mensual (Dejar vacío si varía)</label><input type="number" id="deu-monto-cuota">
+        
+        <label class="form-label">Monto Mensual (Vacío si varía)</label><input type="number" id="deu-monto-cuota">
         <label class="form-label">Día de vencimiento (1 al 31)</label><input type="number" id="deu-dia" min="1" max="31" required>
         <button type="submit" class="btn-submit" id="btn-deu">Guardar Registro</button>
       </form>
@@ -197,7 +199,7 @@
       <form id="form-pago-deuda" onsubmit="enviarPagoDeuda(event)">
         <input type="hidden" id="pag-fila"><input type="hidden" id="pag-acreedor">
         <p id="pag-info" style="font-weight:bold; color:var(--primary); margin-bottom: 5px; background: #f1f5f9; padding: 10px; border-radius: 8px;"></p>
-        <label class="form-label">Monto (Modifica si hay intereses/tarjeta)</label><input type="number" id="pag-monto" required>
+        <label class="form-label">Monto (Modifica si hay intereses)</label><input type="number" id="pag-monto" required>
         <label class="form-label">Pagado con:</label><select id="pag-metodo" required><option value="Efectivo">Efectivo (Caja)</option><option value="Transferencia">Banco / Transferencia</option></select>
         <button type="submit" class="btn-submit" id="btn-pagar" style="background:var(--accent);">Efectuar Pago</button>
       </form>
@@ -210,10 +212,12 @@
         <label class="form-label">Descripción</label><input type="text" id="ei-desc" required>
         <label class="form-label">Costo (Gs.)</label><input type="number" id="ei-costo" required>
         <label class="form-label">Precio (Gs.)</label><input type="number" id="ei-precio" required>
-        <div style="display:flex; gap:10px;">
-          <div style="width:50%"><label class="form-label">Stock</label><input type="number" id="ei-stock" required></div>
-          <div style="width:50%"><label class="form-label">Aviso Mín.</label><input type="number" id="ei-min" required value="0"></div>
+        
+        <div class="form-row">
+          <div class="col-1"><label class="form-label">Stock</label><input type="number" id="ei-stock" required></div>
+          <div class="col-1"><label class="form-label">Aviso Mín.</label><input type="number" id="ei-min" required value="0"></div>
         </div>
+        
         <button type="submit" class="btn-submit" id="btn-ei">Guardar Cambios</button>
       </form>
   </div></div>
@@ -234,15 +238,20 @@
         <input type="hidden" id="ed-fila">
         <label class="form-label">Acreedor</label><input type="text" id="ed-acreedor" required>
         <label class="form-label">Deuda Total</label><input type="number" id="ed-total">
-        <div style="display:flex; gap:10px;">
-          <div style="width:50%"><label class="form-label">Cuota Actual</label><input type="number" id="ed-cuota-actual"></div>
-          <div style="width:50%"><label class="form-label">Totales</label><input type="number" id="ed-cuota-total"></div>
+        
+        <div class="form-row">
+          <div class="col-1"><label class="form-label">Cuota Actual</label><input type="number" id="ed-cuota-actual"></div>
+          <div class="col-1"><label class="form-label">Totales</label><input type="number" id="ed-cuota-total"></div>
         </div>
+        
         <label class="form-label">Monto Mensual</label><input type="number" id="ed-monto">
         <label class="form-label">Día Vencimiento</label><input type="number" id="ed-dia" min="1" max="31" required>
         <button type="submit" class="btn-submit" id="btn-ed">Guardar Cambios</button>
       </form>
   </div></div>
+
+  <!-- Notificación Rápida -->
+  <div id="toast-notificacion" class="toast">¡Guardado con éxito!</div>
 
   <script src="app.js"></script>
 </body>
