@@ -14,7 +14,6 @@ function actualizarDashboard(datos) {
 
   let moneda = new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG' });
 
-  // 1. Saldo en Caja y Patrimonio
   let elSaldo = document.getElementById('val-saldo');
   elSaldo.innerText = moneda.format(datos.saldoCaja || 0);
   elSaldo.style.color = (datos.saldoCaja || 0) < 0 ? "#ef4444" : "#10b981";
@@ -22,13 +21,11 @@ function actualizarDashboard(datos) {
   document.getElementById('val-capital').innerText = moneda.format(datos.capitalInventario || 0);
   document.getElementById('val-taller').innerText = moneda.format(datos.proyeccionTaller || 0);
 
-  // 2. Select Venta
   stockDisponible = datos.productosStock || [];
   let selectVenta = document.getElementById('ven-producto');
   selectVenta.innerHTML = '<option value="">Selecciona qué vas a vender...</option>';
   stockDisponible.forEach(prod => { selectVenta.innerHTML += `<option value="${prod.id}">${prod.nombre} - ${moneda.format(prod.precio)}</option>`; });
 
-  // 3. Renderizar Listas
   let ulStock = document.getElementById('ul-stock');
   ulStock.innerHTML = '';
   if (datos.listaInventario && datos.listaInventario.length > 0) {
@@ -37,7 +34,6 @@ function actualizarDashboard(datos) {
     });
   } else { ulStock.innerHTML = "<li>No hay productos en stock.</li>"; }
 
-  // 4. Renderizar Taller con botón COBRAR
   let ulTaller = document.getElementById('ul-taller');
   ulTaller.innerHTML = '';
   if (datos.listaTaller && datos.listaTaller.length > 0) {
@@ -49,7 +45,19 @@ function actualizarDashboard(datos) {
     });
   } else { ulTaller.innerHTML = "<li>No hay equipos pendientes.</li>"; }
 
-  // 5. Alertas
+  let ulDeudas = document.getElementById('ul-deudas');
+  ulDeudas.innerHTML = '';
+  if (datos.listaDeudas && datos.listaDeudas.length > 0) {
+    datos.listaDeudas.forEach(item => {
+      let colorVenc = item.venceEn <= 5 ? "color:var(--danger);" : "color:var(--primary);";
+      let textoVenc = item.venceEn < 0 ? "¡Vencido!" : (item.venceEn === 0 ? "Vence HOY" : `Vence en ${item.venceEn} d.`);
+      ulDeudas.innerHTML += `<li>
+        <div class="lista-texto" style="width: 65%;"><strong style="${colorVenc}">${item.acreedor}</strong><br><span style="font-size:0.8rem; color:#64748b;">${item.cuotaInfo} - ${textoVenc}</span></div>
+        <button onclick="abrirPagoDeuda(${item.fila}, '${item.acreedor}', ${item.monto})" style="background:var(--accent); color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer; width:35%; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">Pagar</button>
+      </li>`;
+    });
+  } else { ulDeudas.innerHTML = "<li>No hay obligaciones registradas.</li>"; }
+
   let lista = document.getElementById('lista-alertas');
   lista.innerHTML = '';
   let hayAlertas = false;
@@ -76,21 +84,30 @@ function abrirModal(id) { document.getElementById(id).classList.add('mostrar'); 
 function cerrarModal(id) { document.getElementById(id).classList.remove('mostrar'); }
 window.onclick = function(e) { if (e.target.classList.contains('modal')) e.target.classList.remove('mostrar'); }
 
-// Preparar el modal de cobro de taller
 function abrirCobro(id, cliente, equipo, presupuesto) {
   document.getElementById('cob-id').value = id;
   document.getElementById('cob-info').value = cliente + " - " + equipo;
   document.getElementById('cob-monto').value = presupuesto;
+  cerrarModal('modal-lista-taller');
   abrirModal('modal-cobro');
 }
 
-// ENVIOS
+function abrirPagoDeuda(fila, acreedor, monto) {
+  document.getElementById('pag-fila').value = fila;
+  document.getElementById('pag-acreedor').value = acreedor;
+  document.getElementById('pag-monto').value = monto;
+  document.getElementById('pag-info').innerText = "Destino: " + acreedor;
+  cerrarModal('modal-lista-deudas');
+  abrirModal('modal-pago-confirmar');
+}
+
 function enviarVenta(e) { e.preventDefault(); let idProd = document.getElementById('ven-producto').value; let prodNombre = document.getElementById('ven-producto').options[document.getElementById('ven-producto').selectedIndex].text.split(" - ")[0]; procesarEnvio({accion: 'venta', idProducto: idProd, producto: prodNombre, cantidad: document.getElementById('ven-cantidad').value, total: document.getElementById('ven-total').value, metodo: document.getElementById('ven-metodo').value}, 'modal-venta', 'form-venta', 'btn-ven'); }
 function enviarCaja(e) { e.preventDefault(); procesarEnvio({accion: 'caja', tipo: document.getElementById('caja-tipo').value, concepto: document.getElementById('caja-concepto').value, categoria: "Gasto Rápido", monto: document.getElementById('caja-monto').value, metodo: document.getElementById('caja-metodo').value}, 'modal-caja', 'form-caja', 'btn-caja'); }
 function enviarTaller(e) { e.preventDefault(); procesarEnvio({accion: 'taller', cliente: document.getElementById('tal-cliente').value, equipo: document.getElementById('tal-equipo').value, falla: document.getElementById('tal-falla').value, presupuesto: document.getElementById('tal-presupuesto').value}, 'modal-taller', 'form-taller', 'btn-tal'); }
 function enviarInventario(e) { e.preventDefault(); procesarEnvio({accion: 'inventario', tipo: document.getElementById('inv-tipo').value, descripcion: document.getElementById('inv-desc').value, costo: document.getElementById('inv-costo').value, precio: document.getElementById('inv-precio').value, stock: document.getElementById('inv-stock').value, minimo: document.getElementById('inv-min').value, registrarGasto: document.getElementById('inv-gasto').checked}, 'modal-inventario', 'form-inventario', 'btn-inv'); }
 function enviarDeuda(e) { e.preventDefault(); procesarEnvio({accion: 'deuda', acreedor: document.getElementById('deu-categoria').value + " - " + document.getElementById('deu-acreedor').value, montoTotal: document.getElementById('deu-monto-total').value || "", montoCuota: document.getElementById('deu-monto-cuota').value, cuotaActual: document.getElementById('deu-cuota-actual').value || "", cuotasTotales: document.getElementById('deu-cuota-total').value || "", diaVenc: document.getElementById('deu-dia').value}, 'modal-deuda', 'form-deuda', 'btn-deu'); }
 function enviarCobroTaller(e) { e.preventDefault(); procesarEnvio({accion: 'cobrar_taller', idOrden: document.getElementById('cob-id').value, concepto: document.getElementById('cob-info').value, montoCobrado: document.getElementById('cob-monto').value, metodo: document.getElementById('cob-metodo').value}, 'modal-cobro', 'form-cobro', 'btn-cob'); }
+function enviarPagoDeuda(e) { e.preventDefault(); procesarEnvio({accion: 'pagar_deuda', fila: document.getElementById('pag-fila').value, acreedor: document.getElementById('pag-acreedor').value, monto: document.getElementById('pag-monto').value, metodo: document.getElementById('pag-metodo').value}, 'modal-pago-confirmar', 'form-pago-deuda', 'btn-pagar'); }
 
 function procesarEnvio(datos, idModal, idForm, idBtn) {
   let btn = document.getElementById(idBtn); let textoOrig = btn.innerText; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>...'; btn.disabled = true;
