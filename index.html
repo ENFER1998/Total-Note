@@ -3,93 +3,107 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gestor Tech - Panel de Control</title>
+  <title>Total Note - Gestión</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <h1><i class="fas fa-laptop-code"></i> Panel de Gestión Tech</h1>
+  <header>
+    <h1><i class="fas fa-laptop-code"></i> Total Note</h1>
+    <p>Sistema de Gestión y Finanzas</p>
+  </header>
 
-  <!-- Pantalla de carga inicial -->
   <div id="loader">
     <div class="spinner"></div>
     <p>Sincronizando con base de datos...</p>
   </div>
 
-  <!-- Contenedor del Dashboard -->
-  <div id="dashboard" class="dashboard-grid" style="display: none;">
-    <div class="card">
-      <div class="card-icon icon-blue">
-        <i class="fas fa-laptop"></i>
-      </div>
-      <div class="card-info">
-        <h3>Notebooks en Stock</h3>
-        <p id="val-stock">-</p>
-      </div>
+  <main id="main-content" style="display: none;">
+    <!-- Tarjetas de Resumen -->
+    <div class="dashboard-grid">
+      <div class="card"><div class="card-icon icon-blue"><i class="fas fa-box"></i></div><div class="card-info"><h3>Stock Notebooks</h3><p id="val-stock">-</p></div></div>
+      <div class="card"><div class="card-icon icon-orange"><i class="fas fa-tools"></i></div><div class="card-info"><h3>En Taller</h3><p id="val-rep">-</p></div></div>
+      <div class="card"><div class="card-icon icon-red"><i class="fas fa-file-invoice-dollar"></i></div><div class="card-info"><h3>Deuda / Pagos Pend.</h3><p id="val-deuda">-</p></div></div>
     </div>
 
-    <div class="card">
-      <div class="card-icon icon-orange">
-        <i class="fas fa-tools"></i>
-      </div>
-      <div class="card-info">
-        <h3>Equipos en Taller</h3>
-        <p id="val-rep">-</p>
-      </div>
+    <!-- Sección de Alertas -->
+    <div class="alertas-section">
+      <h3><i class="fas fa-bell"></i> Vencimientos Próximos</h3>
+      <ul id="lista-alertas" class="lista-alertas">
+        <!-- Las alertas se cargarán aquí por JS -->
+      </ul>
     </div>
 
-    <div class="card">
-      <div class="card-icon icon-red">
-        <i class="fas fa-file-invoice-dollar"></i>
-      </div>
-      <div class="card-info">
-        <h3>Préstamos/Pagos Pend.</h3>
-        <p id="val-deuda">-</p>
-      </div>
+    <!-- Menú de Acciones -->
+    <div class="acciones">
+      <button class="btn btn-inventario" onclick="abrirModal('modal-inventario')"><i class="fas fa-plus-circle"></i> Nuevo Producto</button>
+      <button class="btn btn-taller" onclick="abrirModal('modal-reparacion')"><i class="fas fa-wrench"></i> Ingresar Equipo</button>
+      <button class="btn btn-finanzas" onclick="abrirModal('modal-finanza')"><i class="fas fa-hand-holding-usd"></i> Registrar Pago/Deuda</button>
     </div>
-  </div>
+  </main>
 
-  <!-- Menú de botones -->
-  <div class="acciones" style="display: none;" id="acciones-menu">
-    <button class="btn" onclick="alert('Módulo de ventas en construcción')"><i class="fas fa-plus"></i> Nueva Venta</button>
-    <button class="btn" onclick="abrirModal('modal-reparacion')"><i class="fas fa-wrench"></i> Ingresar Equipo</button>
-    <button class="btn" onclick="abrirModal('modal-gasto')"><i class="fas fa-money-bill-wave"></i> Registrar Gasto</button>
-  </div>
-
-  <!-- ================= FORMULARIOS EMERGENTES ================= -->
+  <!-- ================= MODALES (VENTANAS FLOTANTES) ================= -->
   
-  <!-- Modal de Equipo (Reparación) -->
+  <!-- Modal Inventario -->
+  <div id="modal-inventario" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="cerrarModal('modal-inventario')">&times;</span>
+      <h2><i class="fas fa-box"></i> Agregar al Inventario</h2>
+      <form id="form-inventario" onsubmit="enviarInventario(event)">
+        <select id="inv-tipo" required>
+          <option value="Notebook">Notebook</option>
+          <option value="Repuesto">Repuesto</option>
+        </select>
+        <input type="text" id="inv-detalle" placeholder="Marca / Modelo / Características" required>
+        <input type="number" id="inv-costo" placeholder="Costo de compra (Gs.)" required>
+        <input type="number" id="inv-precio" placeholder="Precio de Venta (Gs.)" required>
+        <input type="number" id="inv-stock" placeholder="Cantidad en Stock" required>
+        <button type="submit" class="btn-submit" id="btn-inv">Guardar Producto</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Reparación -->
   <div id="modal-reparacion" class="modal">
     <div class="modal-content">
       <span class="close" onclick="cerrarModal('modal-reparacion')">&times;</span>
-      <h2><i class="fas fa-tools"></i> Ingresar Equipo</h2>
+      <h2><i class="fas fa-tools"></i> Ingresar al Taller</h2>
       <form id="form-reparacion" onsubmit="enviarReparacion(event)">
         <input type="text" id="rep-cliente" placeholder="Nombre del Cliente" required>
         <input type="text" id="rep-contacto" placeholder="Teléfono" required>
         <input type="text" id="rep-equipo" placeholder="Equipo (Ej. Notebook HP)" required>
         <input type="text" id="rep-falla" placeholder="Falla reportada" required>
-        <input type="number" id="rep-presupuesto" placeholder="Presupuesto (Gs.)" required>
-        <button type="submit" class="btn btn-submit" id="btn-rep">Guardar Ingreso</button>
+        <input type="number" id="rep-presupuesto" placeholder="Presupuesto (Gs.)">
+        <button type="submit" class="btn-submit" id="btn-rep">Guardar Ingreso</button>
       </form>
     </div>
   </div>
 
-  <!-- Modal de Finanzas (Gasto / Préstamo) -->
-  <div id="modal-gasto" class="modal">
+  <!-- Modal Finanzas -->
+  <div id="modal-finanza" class="modal">
     <div class="modal-content">
-      <span class="close" onclick="cerrarModal('modal-gasto')">&times;</span>
-      <h2><i class="fas fa-money-bill-wave"></i> Registrar Movimiento</h2>
-      <form id="form-gasto" onsubmit="enviarGasto(event)">
-        <input type="text" id="gas-concepto" placeholder="Concepto (Ej. Pago repuesto, Préstamo)" required>
-        <select id="gas-tipo">
-          <option value="Gasto">Gasto del Local</option>
-          <option value="Préstamo">Préstamo / Deuda</option>
+      <span class="close" onclick="cerrarModal('modal-finanza')">&times;</span>
+      <h2><i class="fas fa-file-invoice-dollar"></i> Registrar Finanzas</h2>
+      <form id="form-finanza" onsubmit="enviarFinanza(event)">
+        <input type="text" id="fin-concepto" placeholder="Concepto (Ej. Préstamo Banco, ANDE, Claro)" required>
+        <select id="fin-categoria" onchange="toggleCuotas()" required>
+          <option value="Servicios (Luz/Internet/Tel)">Servicios (Luz/Internet/Tel)</option>
+          <option value="Préstamo">Préstamo</option>
+          <option value="Tarjeta de Crédito">Tarjeta de Crédito</option>
+          <option value="Gasto Local">Gasto de Local / Varios</option>
         </select>
-        <input type="number" id="gas-monto" placeholder="Monto (Gs.)" required>
-        <label style="color:#7f8c8d; font-size:14px; margin-bottom:-10px;">Fecha límite / Vencimiento:</label>
-        <input type="date" id="gas-fecha" required>
-        <button type="submit" class="btn btn-submit" id="btn-gas">Guardar Registro</button>
+        <input type="number" id="fin-monto" placeholder="Monto de la cuota/factura (Gs.)" required>
+        
+        <!-- Contenedor que solo aparece si es Préstamo o Tarjeta -->
+        <div id="div-cuotas" style="display:none; gap: 10px;">
+          <input type="number" id="fin-cuota-actual" placeholder="Cuota actual N° (Ej: 2)" style="width: 50%;">
+          <input type="number" id="fin-cuota-total" placeholder="De cuantas? (Ej: 12)" style="width: 50%;">
+        </div>
+
+        <label style="color:#7f8c8d; font-size:14px; margin-bottom:-5px;">Fecha de Vencimiento:</label>
+        <input type="date" id="fin-fecha" required>
+        <button type="submit" class="btn-submit" id="btn-fin">Guardar Registro</button>
       </form>
     </div>
   </div>
