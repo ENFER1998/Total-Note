@@ -4,9 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gestor Tech - Panel de Control</title>
-  <!-- Iconos de FontAwesome -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-  <!-- Vinculamos tu archivo de estilos -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -21,7 +19,6 @@
 
   <!-- Contenedor del Dashboard -->
   <div id="dashboard" class="dashboard-grid" style="display: none;">
-    
     <div class="card">
       <div class="card-icon icon-blue">
         <i class="fas fa-laptop"></i>
@@ -51,17 +48,52 @@
         <p id="val-deuda">-</p>
       </div>
     </div>
-
   </div>
 
   <!-- Menú de botones -->
   <div class="acciones" style="display: none;" id="acciones-menu">
-    <button class="btn"><i class="fas fa-plus"></i> Nueva Venta</button>
-    <button class="btn"><i class="fas fa-wrench"></i> Ingresar Equipo</button>
-    <button class="btn"><i class="fas fa-money-bill-wave"></i> Registrar Gasto</button>
+    <button class="btn" onclick="alert('Módulo de ventas en construcción')"><i class="fas fa-plus"></i> Nueva Venta</button>
+    <button class="btn" onclick="abrirModal('modal-reparacion')"><i class="fas fa-wrench"></i> Ingresar Equipo</button>
+    <button class="btn" onclick="abrirModal('modal-gasto')"><i class="fas fa-money-bill-wave"></i> Registrar Gasto</button>
   </div>
 
-  <!-- Vinculamos tu archivo de JavaScript -->
+  <!-- ================= FORMULARIOS EMERGENTES ================= -->
+  
+  <!-- Modal de Equipo (Reparación) -->
+  <div id="modal-reparacion" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="cerrarModal('modal-reparacion')">&times;</span>
+      <h2><i class="fas fa-tools"></i> Ingresar Equipo</h2>
+      <form id="form-reparacion" onsubmit="enviarReparacion(event)">
+        <input type="text" id="rep-cliente" placeholder="Nombre del Cliente" required>
+        <input type="text" id="rep-contacto" placeholder="Teléfono" required>
+        <input type="text" id="rep-equipo" placeholder="Equipo (Ej. Notebook HP)" required>
+        <input type="text" id="rep-falla" placeholder="Falla reportada" required>
+        <input type="number" id="rep-presupuesto" placeholder="Presupuesto (Gs.)" required>
+        <button type="submit" class="btn btn-submit" id="btn-rep">Guardar Ingreso</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal de Finanzas (Gasto / Préstamo) -->
+  <div id="modal-gasto" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="cerrarModal('modal-gasto')">&times;</span>
+      <h2><i class="fas fa-money-bill-wave"></i> Registrar Movimiento</h2>
+      <form id="form-gasto" onsubmit="enviarGasto(event)">
+        <input type="text" id="gas-concepto" placeholder="Concepto (Ej. Pago repuesto, Préstamo)" required>
+        <select id="gas-tipo">
+          <option value="Gasto">Gasto del Local</option>
+          <option value="Préstamo">Préstamo / Deuda</option>
+        </select>
+        <input type="number" id="gas-monto" placeholder="Monto (Gs.)" required>
+        <label style="color:#7f8c8d; font-size:14px; margin-bottom:-10px;">Fecha límite / Vencimiento:</label>
+        <input type="date" id="gas-fecha" required>
+        <button type="submit" class="btn btn-submit" id="btn-gas">Guardar Registro</button>
+      </form>
+    </div>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>
