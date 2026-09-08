@@ -18,15 +18,10 @@
   <div id="loader"><div class="spinner"></div><p>Sincronizando sistema...</p></div>
 
   <main id="main-content" style="display: none;">
-    
-    <!-- Balance del Mes -->
+    <!-- Saldo Real -->
     <div class="balance-card">
-      <h3>Balance del Mes</h3>
-      <h2 id="val-neto">Gs. 0</h2>
-      <div class="balance-detalles">
-        <div class="ingreso"><i class="fas fa-arrow-up"></i> <span id="val-ingresos">0</span></div>
-        <div class="egreso"><i class="fas fa-arrow-down"></i> <span id="val-egresos">0</span></div>
-      </div>
+      <h3>Saldo Disponible (Caja)</h3>
+      <h2 id="val-saldo">Gs. 0</h2>
     </div>
 
     <!-- Patrimonio y Listas -->
@@ -39,7 +34,7 @@
       <div class="card" onclick="abrirModal('modal-lista-taller')" style="cursor:pointer; border: 1px solid #e2e8f0;">
         <div class="card-icon icon-orange"><i class="fas fa-tools"></i></div>
         <div class="card-info"><h3>Taller (Cobrar)</h3><p id="val-taller">-</p></div>
-        <div class="ver-mas"><i class="fas fa-eye"></i> Ver equipos</div>
+        <div class="ver-mas"><i class="fas fa-eye"></i> Entregar y Cobrar</div>
       </div>
     </div>
 
@@ -49,7 +44,6 @@
       <ul id="lista-alertas" class="lista-alertas"></ul>
     </div>
 
-    <!-- Botonera Flotante (Tipo App) -->
     <div class="acciones-grid">
       <button class="btn-app btn-venta" onclick="abrirModal('modal-venta')"><i class="fas fa-shopping-cart"></i><span>Vender</span></button>
       <button class="btn-app btn-taller" onclick="abrirModal('modal-taller')"><i class="fas fa-wrench"></i><span>Taller</span></button>
@@ -61,32 +55,24 @@
 
   <!-- ================= MODALES DE REGISTRO ================= -->
   
-  <!-- Modal Venta -->
   <div id="modal-venta" class="modal">
     <div class="modal-content">
       <span class="close" onclick="cerrarModal('modal-venta')">&times;</span>
-      <h2><i class="fas fa-shopping-cart"></i> Nueva Venta</h2>
+      <h2><i class="fas fa-shopping-cart"></i> Venta (Regateable)</h2>
       <form id="form-venta" onsubmit="enviarVenta(event)">
         <select id="ven-producto" required onchange="autocompletarPrecio()"><option value="">Selecciona qué vas a vender...</option></select>
         <div style="display:flex; gap:10px;">
           <input type="number" id="ven-cantidad" placeholder="Cant." required value="1" style="width:30%">
-          <input type="number" id="ven-total" placeholder="Total a cobrar (Gs.)" required style="width:70%">
+          <input type="number" id="ven-total" placeholder="Precio Final" required style="width:70%">
         </div>
-        <select id="ven-metodo" required>
-          <option value="Efectivo">Efectivo</option>
-          <option value="Transferencia">Transferencia</option>
-          <option value="POS / Tarjeta">POS / Tarjeta</option>
-        </select>
+        <select id="ven-metodo" required><option value="Efectivo">Efectivo</option><option value="Transferencia">Transferencia</option><option value="POS / Tarjeta">POS / Tarjeta</option></select>
         <button type="submit" class="btn-submit" id="btn-ven">Registrar Venta</button>
       </form>
     </div>
   </div>
 
-  <!-- Modal Taller -->
   <div id="modal-taller" class="modal">
-    <div class="modal-content">
-      <span class="close" onclick="cerrarModal('modal-taller')">&times;</span>
-      <h2><i class="fas fa-wrench"></i> Recepción Taller</h2>
+    <div class="modal-content"><span class="close" onclick="cerrarModal('modal-taller')">&times;</span><h2><i class="fas fa-wrench"></i> Recepción Taller</h2>
       <form id="form-taller" onsubmit="enviarTaller(event)">
         <input type="text" id="tal-cliente" placeholder="Nombre del Cliente" required>
         <input type="text" id="tal-equipo" placeholder="Equipo (Ej. Notebook Dell)" required>
@@ -97,104 +83,71 @@
     </div>
   </div>
 
-  <!-- Modal Inventario -->
   <div id="modal-inventario" class="modal">
-    <div class="modal-content">
-      <span class="close" onclick="cerrarModal('modal-inventario')">&times;</span>
-      <h2><i class="fas fa-box-open"></i> Nueva Mercadería</h2>
+    <div class="modal-content"><span class="close" onclick="cerrarModal('modal-inventario')">&times;</span><h2><i class="fas fa-box-open"></i> Agregar Stock</h2>
       <form id="form-inventario" onsubmit="enviarInventario(event)">
-        <select id="inv-tipo" required>
-          <option value="Notebook">Notebook</option>
-          <option value="Repuesto">Repuesto</option>
-          <option value="Accesorio">Accesorio</option>
-        </select>
+        <select id="inv-tipo" required><option value="Notebook">Notebook</option><option value="Repuesto">Repuesto</option><option value="Accesorio">Accesorio</option></select>
         <input type="text" id="inv-desc" placeholder="Marca / Modelo" required>
-        <input type="number" id="inv-costo" placeholder="Costo de compra (Gs.)" required>
+        <input type="number" id="inv-costo" placeholder="Costo base (Gs.)" required>
         <input type="number" id="inv-precio" placeholder="Precio de Venta (Gs.)" required>
-        <div style="display:flex; gap:10px;">
-          <input type="number" id="inv-stock" placeholder="Cant." required style="width:50%">
-          <input type="number" id="inv-min" placeholder="Aviso min." required value="1" style="width:50%">
-        </div>
+        <div style="display:flex; gap:10px;"><input type="number" id="inv-stock" placeholder="Cant." required style="width:50%"><input type="number" id="inv-min" placeholder="Aviso min." required value="1" style="width:50%"></div>
+        <!-- AQUÍ ESTÁ EL BOTÓN DE STOCK VIEJO VS COMPRA NUEVA -->
+        <label style="font-size: 0.9rem; font-weight:bold; margin-top:10px; display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" id="inv-gasto" style="width:auto;"> Restar esta compra de mi Caja Diaria
+        </label>
+        <p style="font-size:0.75rem; color:#64748b; margin-top:0;">Desmarca la casilla si es una notebook que ya tenías y solo quieres sumarla al sistema.</p>
         <button type="submit" class="btn-submit" id="btn-inv">Agregar al Stock</button>
       </form>
     </div>
   </div>
 
-  <!-- Modal Caja Común -->
   <div id="modal-caja" class="modal">
-    <div class="modal-content">
-      <span class="close" onclick="cerrarModal('modal-caja')">&times;</span>
-      <h2><i class="fas fa-cash-register"></i> Caja Diaria</h2>
+    <div class="modal-content"><span class="close" onclick="cerrarModal('modal-caja')">&times;</span><h2><i class="fas fa-cash-register"></i> Caja Diaria</h2>
       <form id="form-caja" onsubmit="enviarCaja(event)">
-        <select id="caja-tipo" required>
-          <option value="Egreso">🔴 GASTO RÁPIDO (Ej. Comida)</option>
-          <option value="Ingreso">🟢 INGRESO EXTRA</option>
-        </select>
+        <select id="caja-tipo" required><option value="Egreso">🔴 GASTO RÁPIDO (Ej. Comida)</option><option value="Ingreso">🟢 INGRESO EXTRA / Ajuste Capital</option></select>
         <input type="text" id="caja-concepto" placeholder="¿En qué? (Ej. Almuerzo)" required>
         <input type="number" id="caja-monto" placeholder="Monto (Gs.)" required>
-        <select id="caja-metodo" required>
-          <option value="Efectivo">Efectivo</option>
-          <option value="Transferencia">Transferencia</option>
-        </select>
+        <select id="caja-metodo" required><option value="Efectivo">Efectivo</option><option value="Transferencia">Transferencia</option></select>
         <button type="submit" class="btn-submit" id="btn-caja">Guardar Movimiento</button>
       </form>
     </div>
   </div>
 
-  <!-- Modal Deudas y Servicios -->
   <div id="modal-deuda" class="modal">
-    <div class="modal-content">
-      <span class="close" onclick="cerrarModal('modal-deuda')">&times;</span>
-      <h2><i class="fas fa-file-invoice-dollar"></i> Servicios y Deudas</h2>
+    <div class="modal-content"><span class="close" onclick="cerrarModal('modal-deuda')">&times;</span><h2><i class="fas fa-file-invoice-dollar"></i> Servicios y Deudas</h2>
       <form id="form-deuda" onsubmit="enviarDeuda(event)">
-        <select id="deu-categoria" onchange="toggleSuscripcion()" required>
-          <option value="">Selecciona qué vas a registrar...</option>
-          <option value="Servicio (Luz/Agua)">Servicio (Luz/Agua)</option>
-          <option value="Internet/Telefonía">Internet/Telefonía</option>
-          <option value="Préstamo">Préstamo Financiero</option>
-          <option value="Tarjeta de Crédito">Tarjeta de Crédito</option>
-          <option value="Alquiler/Otro">Alquiler / Otro</option>
-        </select>
-        
+        <select id="deu-categoria" required><option value="">Selecciona qué vas a registrar...</option><option value="Servicio (Luz/Agua)">Servicio (Luz/Agua)</option><option value="Internet/Telefonía">Internet/Telefonía</option><option value="Préstamo">Préstamo Financiero</option><option value="Tarjeta de Crédito">Tarjeta de Crédito</option><option value="Alquiler/Otro">Alquiler / Otro</option></select>
         <input type="text" id="deu-acreedor" placeholder="Nombre (Ej. ANDE, Tigo, Banco Itaú)" required>
-        
-        <!-- Bloque Inteligente para Préstamo/Tarjeta -->
-        <div id="div-deuda-cuotas" style="display:none; flex-direction:column; gap:12px; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
-           <label style="font-size: 0.85rem; color: #64748b; font-weight: bold;">Detalles del Préstamo/Tarjeta:</label>
-           <input type="number" id="deu-monto-total" placeholder="Deuda Total (Opcional)">
-           <div style="display:flex; gap:10px; align-items:center;">
-             <input type="number" id="deu-cuota-actual" placeholder="Cuota N°" style="width:50%"> 
-             <input type="number" id="deu-cuota-total" placeholder="De cuantas?" style="width:50%">
-           </div>
+        <div id="div-deuda-cuotas" style="display:flex; flex-direction:column; gap:12px; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+           <label style="font-size: 0.85rem; color: #64748b; font-weight: bold;">Si es préstamo o tarjeta (Opcional):</label>
+           <input type="number" id="deu-monto-total" placeholder="Deuda Total a pagar (Gs.)">
+           <div style="display:flex; gap:10px; align-items:center;"><input type="number" id="deu-cuota-actual" placeholder="Cuota N° (Ej: 1)" style="width:50%"><input type="number" id="deu-cuota-total" placeholder="De cuantas? (Ej: 12)" style="width:50%"></div>
         </div>
-
         <input type="number" id="deu-monto-cuota" placeholder="Monto a pagar mensual (Gs.)" required>
-        
         <label style="font-size: 0.9rem; margin-top:5px; font-weight:bold;">¿Qué día del mes vence?</label>
         <input type="number" id="deu-dia" placeholder="Día del mes (Ej: 15)" min="1" max="31" required>
-        
         <button type="submit" class="btn-submit" id="btn-deu">Guardar Registro</button>
       </form>
     </div>
   </div>
 
-  <!-- ================= MODALES DE VISUALIZACIÓN ================= -->
-  
-  <div id="modal-lista-stock" class="modal">
-    <div class="modal-content" style="max-height:80vh; overflow-y:auto;">
-      <span class="close" onclick="cerrarModal('modal-lista-stock')">&times;</span>
-      <h2><i class="fas fa-boxes"></i> Inventario Actual</h2>
-      <ul id="ul-stock" class="lista-visualizacion"></ul>
+  <!-- NUEVO: Modal para Cobrar Taller -->
+  <div id="modal-cobro" class="modal">
+    <div class="modal-content"><span class="close" onclick="cerrarModal('modal-cobro')">&times;</span><h2><i class="fas fa-hand-holding-usd"></i> Cobrar Reparación</h2>
+      <form id="form-cobro" onsubmit="enviarCobroTaller(event)">
+        <input type="hidden" id="cob-id">
+        <input type="text" id="cob-info" readonly style="background:#e2e8f0; color:#64748b; font-weight:bold; border:none;">
+        <label style="font-weight:bold; font-size:0.9rem; margin-top:10px;">Precio Final (Modifica si hubo regateo):</label>
+        <input type="number" id="cob-monto" required>
+        <select id="cob-metodo" required><option value="Efectivo">Efectivo</option><option value="Transferencia">Transferencia</option></select>
+        <button type="submit" class="btn-submit" id="btn-cob">Entregar y Cobrar</button>
+      </form>
     </div>
   </div>
 
-  <div id="modal-lista-taller" class="modal">
-    <div class="modal-content" style="max-height:80vh; overflow-y:auto;">
-      <span class="close" onclick="cerrarModal('modal-lista-taller')">&times;</span>
-      <h2><i class="fas fa-tools"></i> Equipos en Taller</h2>
-      <ul id="ul-taller" class="lista-visualizacion"></ul>
-    </div>
-  </div>
+  <!-- ================= MODALES DE VISUALIZACIÓN ================= -->
+  <div id="modal-lista-stock" class="modal"><div class="modal-content" style="max-height:80vh; overflow-y:auto;"><span class="close" onclick="cerrarModal('modal-lista-stock')">&times;</span><h2><i class="fas fa-boxes"></i> Inventario Actual</h2><ul id="ul-stock" class="lista-visualizacion"></ul></div></div>
+  <div id="modal-lista-taller" class="modal"><div class="modal-content" style="max-height:80vh; overflow-y:auto;"><span class="close" onclick="cerrarModal('modal-lista-taller')">&times;</span><h2><i class="fas fa-tools"></i> Equipos en Taller</h2><ul id="ul-taller" class="lista-visualizacion"></ul></div></div>
 
   <script src="app.js"></script>
 </body>
