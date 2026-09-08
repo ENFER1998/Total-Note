@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestor Tech - Panel de Control</title>
+  <!-- Iconos de FontAwesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <!-- Vinculamos tu archivo de estilos -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <h1><i class="fas fa-laptop-code"></i> Panel de Gestión Tech</h1>
+
+  <!-- Pantalla de carga inicial -->
+  <div id="loader">
+    <div class="spinner"></div>
+    <p>Sincronizando con base de datos...</p>
+  </div>
+
+  <!-- Contenedor del Dashboard -->
+  <div id="dashboard" class="dashboard-grid" style="display: none;">
+    
+    <div class="card">
+      <div class="card-icon icon-blue">
+        <i class="fas fa-laptop"></i>
+      </div>
+      <div class="card-info">
+        <h3>Notebooks en Stock</h3>
+        <p id="val-stock">-</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-icon icon-orange">
+        <i class="fas fa-tools"></i>
+      </div>
+      <div class="card-info">
+        <h3>Equipos en Taller</h3>
+        <p id="val-rep">-</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-icon icon-red">
+        <i class="fas fa-file-invoice-dollar"></i>
+      </div>
+      <div class="card-info">
+        <h3>Préstamos/Pagos Pend.</h3>
+        <p id="val-deuda">-</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Menú de botones -->
+  <div class="acciones" style="display: none;" id="acciones-menu">
+    <button class="btn"><i class="fas fa-plus"></i> Nueva Venta</button>
+    <button class="btn"><i class="fas fa-wrench"></i> Ingresar Equipo</button>
+    <button class="btn"><i class="fas fa-money-bill-wave"></i> Registrar Gasto</button>
+  </div>
+
+  <!-- Vinculamos tu archivo de JavaScript -->
+  <script src="app.js"></script>
+</body>
+</html>
