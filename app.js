@@ -1,9 +1,13 @@
 const URL_APPS_SCRIPT = "https://script.google.com/macros/s/AKfycbziOBMxs0Xy1tO4gc18j5ZchSU-e8cN3IEEL0U3kw1ymGl7Gf8XA-Fqwp0O2CIIljT13A/exec";
 let stockDisponible = [];
 
-document.addEventListener("DOMContentLoaded", () => { obtenerDatosAPI(); });
+document.addEventListener("DOMContentLoaded", () => { 
+  let cache = localStorage.getItem("totalNote_datos");
+  if (cache) actualizarUI(JSON.parse(cache));
+  obtenerDatosAPI(); 
+  setInterval(obtenerDatosSilencioso, 12000);
+});
 
-// CONTROL DE NAVEGACIÓN Y MENÚ
 function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('menu-overlay').classList.toggle('mostrar'); }
 function cerrarMenu() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('menu-overlay').classList.remove('mostrar'); }
 
@@ -18,10 +22,28 @@ function cerrarModal(id) { document.getElementById(id).classList.remove('mostrar
 window.onclick = function(e) { if (e.target.classList.contains('modal')) e.target.classList.remove('mostrar'); }
 function limpiarTexto(txt) { return String(txt).replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
 
-// OBTENER Y PINTAR DATOS
+function mostrarToast(mensaje) {
+  let toast = document.getElementById('toast-notificacion');
+  toast.innerText = mensaje;
+  toast.classList.add('mostrar');
+  setTimeout(() => toast.classList.remove('mostrar'), 3000);
+}
+
 function obtenerDatosAPI() {
-  fetch(URL_APPS_SCRIPT).then(r => r.json()).then(datos => actualizarUI(datos))
-  .catch(e => { document.getElementById('loader').innerHTML = `<p style="color:red; font-weight:bold; text-align:center;">Error de red o Servidor.</p>`; });
+  fetch(URL_APPS_SCRIPT).then(r => r.json()).then(datos => {
+    localStorage.setItem("totalNote_datos", JSON.stringify(datos));
+    actualizarUI(datos);
+  }).catch(e => console.log("Cargando desde caché"));
+}
+
+function obtenerDatosSilencioso() {
+  fetch(URL_APPS_SCRIPT).then(r => r.json()).then(datos => {
+    let cacheActual = localStorage.getItem("totalNote_datos");
+    if(JSON.stringify(datos) !== cacheActual) {
+      localStorage.setItem("totalNote_datos", JSON.stringify(datos));
+      actualizarUI(datos);
+    }
+  }).catch(e => console.log("Sincronización pausada"));
 }
 
 function actualizarUI(datos) {
@@ -29,7 +51,6 @@ function actualizarUI(datos) {
   document.getElementById('main-content').style.display = 'block';
   let moneda = new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG' });
 
-  // 1. Dashboard
   document.getElementById('val-ingresos').innerText = moneda.format(datos.ingresosMes || 0);
   document.getElementById('val-egresos').innerText = moneda.format(datos.egresosMes || 0);
   let neto = (datos.ingresosMes || 0) - (datos.egresosMes || 0);
@@ -40,7 +61,6 @@ function actualizarUI(datos) {
   document.getElementById('val-capital').innerText = moneda.format(datos.capitalInventario || 0);
   document.getElementById('val-taller').innerText = moneda.format(datos.proyeccionTaller || 0);
 
-  // Gráfico Gastos
   let contGastos = document.getElementById('grafico-gastos'); contGastos.innerHTML = '';
   if (datos.gastosDashboard && datos.gastosDashboard.length > 0) {
     let max = datos.gastosDashboard[0].total;
@@ -50,13 +70,11 @@ function actualizarUI(datos) {
     });
   } else { contGastos.innerHTML = '<p style="font-size:0.9rem; color:#64748b;">No hay gastos registrados este mes.</p>'; }
 
-  // 2. Selectores de Venta
   stockDisponible = datos.productosStock || [];
   let selectVenta = document.getElementById('ven-producto');
   selectVenta.innerHTML = '<option value="">Selecciona qué vas a vender...</option>';
   stockDisponible.forEach(prod => { selectVenta.innerHTML += `<option value="${prod.id}">${prod.nombre} - ${moneda.format(prod.precio)}</option>`; });
 
-  // 3. Vista INVENTARIO
   let ulStock = document.getElementById('ul-stock'); ulStock.innerHTML = '';
   if (datos.listaInventario && datos.listaInventario.length > 0) {
     datos.listaInventario.forEach(item => {
@@ -67,7 +85,6 @@ function actualizarUI(datos) {
     });
   } else { ulStock.innerHTML = "<li style='justify-content:center; color:#64748b;'>Inventario vacío.</li>"; }
 
-  // 4. Vista TALLER
   let ulTaller = document.getElementById('ul-taller'); ulTaller.innerHTML = '';
   if (datos.listaTaller && datos.listaTaller.length > 0) {
     datos.listaTaller.forEach(item => {
@@ -81,7 +98,6 @@ function actualizarUI(datos) {
     });
   } else { ulTaller.innerHTML = "<li style='justify-content:center; color:#64748b;'>No hay equipos pendientes.</li>"; }
 
-  // 5. Vista DEUDAS
   let ulDeudas = document.getElementById('ul-deudas'); ulDeudas.innerHTML = '';
   if (datos.listaDeudas && datos.listaDeudas.length > 0) {
     datos.listaDeudas.forEach(item => {
@@ -97,7 +113,6 @@ function actualizarUI(datos) {
     });
   } else { ulDeudas.innerHTML = "<li style='justify-content:center; color:#64748b;'>No hay deudas activas.</li>"; }
 
-  // 6. Vista CAJA (Historial)
   let ulCaja = document.getElementById('ul-caja'); ulCaja.innerHTML = '';
   if (datos.listaCaja && datos.listaCaja.length > 0) {
     datos.listaCaja.forEach(tx => {
@@ -110,7 +125,6 @@ function actualizarUI(datos) {
     });
   } else { ulCaja.innerHTML = "<li style='justify-content:center; color:#64748b;'>Sin movimientos.</li>"; }
 
-  // 7. Alertas Dashboard
   let listaA = document.getElementById('lista-alertas'); listaA.innerHTML = ''; let hayAlertas = false;
   if (datos.stockBajo && datos.stockBajo.length > 0) { datos.stockBajo.forEach(aviso => { listaA.innerHTML += `<li><span><i class="fas fa-box" style="color:#f59e0b"></i> ${aviso}</span><span class="texto-rojo">Comprar</span></li>`; hayAlertas = true; }); }
   if (datos.alertasDeuda && datos.alertasDeuda.length > 0) {
@@ -123,14 +137,12 @@ function actualizarUI(datos) {
 }
 
 function autocompletarPrecio() { let id = document.getElementById('ven-producto').value; let prod = stockDisponible.find(p => p.id == id); if (prod) document.getElementById('ven-total').value = prod.precio * (document.getElementById('ven-cantidad').value || 1); }
-
 function abrirCobro(id, cli, eq, pres) { document.getElementById('cob-id').value = id; document.getElementById('cob-info').value = cli + " - " + eq; document.getElementById('cob-monto').value = pres; abrirModal('modal-cobro'); }
 function abrirPagoDeuda(fila, acreedor, monto) { document.getElementById('pag-fila').value = fila; document.getElementById('pag-acreedor').value = acreedor; document.getElementById('pag-monto').value = monto || ""; document.getElementById('pag-info').innerText = "Destino: " + acreedor; abrirModal('modal-pago-confirmar'); }
 function abrirEditInv(id, tipo, desc, costo, precio, stock, min) { document.getElementById('ei-id').value = id; document.getElementById('ei-tipo').value = tipo; document.getElementById('ei-desc').value = desc; document.getElementById('ei-costo').value = costo; document.getElementById('ei-precio').value = precio; document.getElementById('ei-stock').value = stock; document.getElementById('ei-min').value = min; abrirModal('modal-edit-inv'); }
 function abrirEditTaller(id, cli, eq, falla, pres) { document.getElementById('et-id').value = id; document.getElementById('et-cliente').value = cli; document.getElementById('et-equipo').value = eq; document.getElementById('et-falla').value = falla; document.getElementById('et-presupuesto').value = pres; abrirModal('modal-edit-taller'); }
 function abrirEditDeuda(fila, acre, total, cuota, act, tot, dia) { document.getElementById('ed-fila').value = fila; document.getElementById('ed-acreedor').value = acre; document.getElementById('ed-total').value = total; document.getElementById('ed-monto').value = cuota; document.getElementById('ed-cuota-actual').value = act; document.getElementById('ed-cuota-total').value = tot; document.getElementById('ed-dia').value = dia; abrirModal('modal-edit-deuda'); }
 
-// ENVIOS
 function enviarVenta(e) { e.preventDefault(); let idProd = document.getElementById('ven-producto').value; let prodNombre = document.getElementById('ven-producto').options[document.getElementById('ven-producto').selectedIndex].text.split(" - ")[0]; procesarEnvio({accion: 'venta', idProducto: idProd, producto: prodNombre, cantidad: document.getElementById('ven-cantidad').value, total: document.getElementById('ven-total').value, metodo: document.getElementById('ven-metodo').value}, 'modal-venta', 'form-venta', 'btn-ven'); }
 function enviarCaja(e) { e.preventDefault(); procesarEnvio({accion: 'caja', tipo: document.getElementById('caja-tipo').value, categoria: document.getElementById('caja-categoria').value, concepto: document.getElementById('caja-concepto').value, monto: document.getElementById('caja-monto').value, metodo: document.getElementById('caja-metodo').value}, 'modal-caja', 'form-caja', 'btn-caja'); }
 function enviarTaller(e) { e.preventDefault(); procesarEnvio({accion: 'taller', cliente: document.getElementById('tal-cliente').value, equipo: document.getElementById('tal-equipo').value, falla: document.getElementById('tal-falla').value, presupuesto: document.getElementById('tal-presupuesto').value}, 'modal-taller', 'form-taller', 'btn-tal'); }
@@ -146,6 +158,6 @@ function procesarEnvio(datos, idModal, idForm, idBtn) {
   let btn = document.getElementById(idBtn); let textoOrig = btn.innerText; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>...'; btn.disabled = true;
   fetch(URL_APPS_SCRIPT, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(datos) })
   .then(r => r.json()).then(res => {
-    if (res.exito) { cerrarModal(idModal); document.getElementById(idForm).reset(); document.getElementById('main-content').style.display = 'none'; document.getElementById('loader').style.display = 'block'; obtenerDatosAPI(); } else alert("Error: " + res.error);
+    if (res.exito) { cerrarModal(idModal); document.getElementById(idForm).reset(); mostrarToast("¡Guardado correctamente!"); obtenerDatosSilencioso(); } else alert("Error: " + res.error);
   }).catch(e => alert("Error de red.")).finally(() => { btn.innerText = textoOrig; btn.disabled = false; });
 }
