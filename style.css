@@ -63,3 +63,20 @@ main { padding: 0 15px 100px 15px; max-width: 600px; margin: 0 auto; }
 #loader { text-align: center; margin-top: 100px; font-weight: bold; color: var(--primary); }
 .spinner { border: 4px solid #e2e8f0; border-top-color: var(--accent); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 15px; }
 @keyframes spin { to { transform: rotate(360deg); } }
+/* Botonera de 5 botones */
+.acciones-grid { display: flex; overflow-x: auto; gap: 10px; position: fixed; bottom: 20px; left: 15px; right: 15px; max-width: 600px; margin: 0 auto; background: white; padding: 10px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); scrollbar-width: none;}
+.acciones-grid::-webkit-scrollbar { display: none; }
+.btn-app { flex: 0 0 70px; } /* Evita que los botones se encojan */
+.btn-deuda i { color: #dc2626; }
+
+/* Enlace "Ver más" en las tarjetas */
+.ver-mas { font-size: 0.8rem; color: var(--accent); margin-top: 10px; border-top: 1px solid #f1f5f9; padding-top: 10px; font-weight: bold;}
+
+/* Listas de Visualización (Stock y Taller) */
+.lista-visualizacion { list-style: none; padding: 0; margin: 0; }
+.lista-visualizacion li { padding: 12px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
+.lista-visualizacion li:last-child { border-bottom: none; }
+.lista-texto { font-size: 0.9rem; line-height: 1.4; }
+.lista-texto strong { color: var(--primary); font-size: 1rem; }
+.badge-stock { background: #e0f2fe; color: #0284c7; padding: 5px 10px; border-radius: 20px; font-weight: bold; font-size: 0.85rem;}
+.badge-taller { background: #fef3c7; color: #d97706; padding: 5px 10px; border-radius: 20px; font-weight: bold; font-size: 0.85rem;}
