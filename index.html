@@ -114,9 +114,9 @@
         <label class="form-label">Producto a Vender</label>
         <select id="ven-producto" required onchange="autocompletarPrecio()"><option value="">Cargando...</option></select>
         
-        <div class="form-row">
-          <div class="col-1"><label class="form-label">Cant.</label><input type="number" id="ven-cantidad" required value="1"></div>
-          <div class="col-2"><label class="form-label">Precio Final</label><input type="number" id="ven-total" required></div>
+        <div class="grid-1-2">
+          <div><label class="form-label">Cant.</label><input type="number" id="ven-cantidad" required value="1"></div>
+          <div><label class="form-label">Precio Final</label><input type="number" id="ven-total" required></div>
         </div>
 
         <label class="form-label">Método</label>
@@ -132,9 +132,9 @@
         <label class="form-label">Costo (Gs.)</label><input type="number" id="inv-costo" required>
         <label class="form-label">Precio de Venta (Gs.)</label><input type="number" id="inv-precio" required>
         
-        <div class="form-row">
-          <div class="col-1"><label class="form-label">Cantidad</label><input type="number" id="inv-stock" required></div>
-          <div class="col-1"><label class="form-label">Aviso Mín.</label><input type="number" id="inv-min" required value="0"></div>
+        <div class="grid-1-1">
+          <div><label class="form-label">Cantidad</label><input type="number" id="inv-stock" required></div>
+          <div><label class="form-label">Aviso Mín.</label><input type="number" id="inv-min" required value="0"></div>
         </div>
 
         <label style="font-size: 0.85rem; font-weight:bold; margin-top:10px; display:flex; align-items:center; gap:8px;"><input type="checkbox" id="inv-gasto" style="width:auto;"> Restar costo de la Caja</label>
@@ -172,9 +172,9 @@
            <label class="form-label" style="color:#3b82f6;">Si es préstamo o tarjeta (Opcional):</label>
            <label class="form-label" style="margin-top:0;">Deuda Total a Pagar</label><input type="number" id="deu-monto-total">
            
-           <div class="form-row">
-             <div class="col-1"><label class="form-label">Cuota N°</label><input type="number" id="deu-cuota-actual"></div>
-             <div class="col-1"><label class="form-label">De cuantas?</label><input type="number" id="deu-cuota-total"></div>
+           <div class="grid-1-1">
+             <div><label class="form-label">Cuota N°</label><input type="number" id="deu-cuota-actual"></div>
+             <div><label class="form-label">De cuantas?</label><input type="number" id="deu-cuota-total"></div>
            </div>
         </div>
         
@@ -213,9 +213,9 @@
         <label class="form-label">Costo (Gs.)</label><input type="number" id="ei-costo" required>
         <label class="form-label">Precio (Gs.)</label><input type="number" id="ei-precio" required>
         
-        <div class="form-row">
-          <div class="col-1"><label class="form-label">Stock</label><input type="number" id="ei-stock" required></div>
-          <div class="col-1"><label class="form-label">Aviso Mín.</label><input type="number" id="ei-min" required value="0"></div>
+        <div class="grid-1-1">
+          <div><label class="form-label">Stock</label><input type="number" id="ei-stock" required></div>
+          <div><label class="form-label">Aviso Mín.</label><input type="number" id="ei-min" required value="0"></div>
         </div>
         
         <button type="submit" class="btn-submit" id="btn-ei">Guardar Cambios</button>
@@ -239,9 +239,9 @@
         <label class="form-label">Acreedor</label><input type="text" id="ed-acreedor" required>
         <label class="form-label">Deuda Total</label><input type="number" id="ed-total">
         
-        <div class="form-row">
-          <div class="col-1"><label class="form-label">Cuota Actual</label><input type="number" id="ed-cuota-actual"></div>
-          <div class="col-1"><label class="form-label">Totales</label><input type="number" id="ed-cuota-total"></div>
+        <div class="grid-1-1">
+          <div><label class="form-label">Cuota Actual</label><input type="number" id="ed-cuota-actual"></div>
+          <div><label class="form-label">Totales</label><input type="number" id="ed-cuota-total"></div>
         </div>
         
         <label class="form-label">Monto Mensual</label><input type="number" id="ed-monto">
