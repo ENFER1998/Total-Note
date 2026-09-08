@@ -18,7 +18,6 @@
   <div id="loader"><div class="spinner"></div><p>Sincronizando sistema...</p></div>
 
   <main id="main-content" style="display: none;">
-    
     <div class="balance-card">
       <h3>Saldo Disponible (Caja)</h3>
       <h2 id="val-saldo">Gs. 0</h2>
@@ -28,17 +27,17 @@
       <div class="card" onclick="abrirModal('modal-lista-stock')" style="cursor:pointer; border: 1px solid #e2e8f0;">
         <div class="card-icon icon-blue"><i class="fas fa-boxes"></i></div>
         <div class="card-info"><h3>Capital en Stock</h3><p id="val-capital">-</p></div>
-        <div class="ver-mas"><i class="fas fa-eye"></i> Ver inventario</div>
+        <div class="ver-mas"><i class="fas fa-eye"></i> Ver y Editar Stock</div>
       </div>
       <div class="card" onclick="abrirModal('modal-lista-taller')" style="cursor:pointer; border: 1px solid #e2e8f0;">
         <div class="card-icon icon-orange"><i class="fas fa-tools"></i></div>
         <div class="card-info"><h3>Taller (Cobrar)</h3><p id="val-taller">-</p></div>
-        <div class="ver-mas"><i class="fas fa-eye"></i> Entregar equipo</div>
+        <div class="ver-mas"><i class="fas fa-eye"></i> Entregar y Editar</div>
       </div>
       <div class="card" onclick="abrirModal('modal-lista-deudas')" style="cursor:pointer; border: 1px solid #e2e8f0; grid-column: 1 / -1;">
         <div class="card-icon" style="background:#fef2f2; color:#ef4444;"><i class="fas fa-file-invoice-dollar"></i></div>
         <div class="card-info"><h3>Obligaciones Mensuales</h3><p style="font-size: 1rem;">Servicios y Préstamos</p></div>
-        <div class="ver-mas" style="color:#ef4444;"><i class="fas fa-hand-holding-usd"></i> Pagar Cuotas</div>
+        <div class="ver-mas" style="color:#ef4444;"><i class="fas fa-hand-holding-usd"></i> Pagar / Editar Cuotas</div>
       </div>
     </div>
 
@@ -56,24 +55,18 @@
     </div>
   </main>
 
-  <!-- ================= MODALES DE REGISTRO ================= -->
+  <!-- ================= MODALES DE CREACIÓN ================= -->
   
-  <div id="modal-venta" class="modal">
-    <div class="modal-content"><span class="close" onclick="cerrarModal('modal-venta')">&times;</span><h2><i class="fas fa-shopping-cart"></i> Venta (Regateable)</h2>
+  <div id="modal-venta" class="modal"><div class="modal-content"><span class="close" onclick="cerrarModal('modal-venta')">&times;</span><h2><i class="fas fa-shopping-cart"></i> Venta (Regateable)</h2>
       <form id="form-venta" onsubmit="enviarVenta(event)">
         <select id="ven-producto" required onchange="autocompletarPrecio()"><option value="">Selecciona qué vas a vender...</option></select>
-        <div style="display:flex; gap:10px;">
-          <input type="number" id="ven-cantidad" placeholder="Cant." required value="1" style="width:30%">
-          <input type="number" id="ven-total" placeholder="Precio Final" required style="width:70%">
-        </div>
+        <div style="display:flex; gap:10px;"><input type="number" id="ven-cantidad" placeholder="Cant." required value="1" style="width:30%"><input type="number" id="ven-total" placeholder="Precio Final" required style="width:70%"></div>
         <select id="ven-metodo" required><option value="Efectivo">Efectivo</option><option value="Transferencia">Transferencia</option><option value="POS / Tarjeta">POS / Tarjeta</option></select>
         <button type="submit" class="btn-submit" id="btn-ven">Registrar Venta</button>
       </form>
-    </div>
-  </div>
+  </div></div>
 
-  <div id="modal-taller" class="modal">
-    <div class="modal-content"><span class="close" onclick="cerrarModal('modal-taller')">&times;</span><h2><i class="fas fa-wrench"></i> Recepción Taller</h2>
+  <div id="modal-taller" class="modal"><div class="modal-content"><span class="close" onclick="cerrarModal('modal-taller')">&times;</span><h2><i class="fas fa-wrench"></i> Recepción Taller</h2>
       <form id="form-taller" onsubmit="enviarTaller(event)">
         <input type="text" id="tal-cliente" placeholder="Nombre del Cliente" required>
         <input type="text" id="tal-equipo" placeholder="Equipo (Ej. Notebook Dell)" required>
@@ -81,28 +74,21 @@
         <input type="number" id="tal-presupuesto" placeholder="Presupuesto a cobrar (Gs.)" required>
         <button type="submit" class="btn-submit" id="btn-tal">Ingresar Equipo</button>
       </form>
-    </div>
-  </div>
+  </div></div>
 
-  <div id="modal-inventario" class="modal">
-    <div class="modal-content"><span class="close" onclick="cerrarModal('modal-inventario')">&times;</span><h2><i class="fas fa-box-open"></i> Agregar Stock</h2>
+  <div id="modal-inventario" class="modal"><div class="modal-content"><span class="close" onclick="cerrarModal('modal-inventario')">&times;</span><h2><i class="fas fa-box-open"></i> Agregar Stock</h2>
       <form id="form-inventario" onsubmit="enviarInventario(event)">
         <select id="inv-tipo" required><option value="Notebook">Notebook</option><option value="Repuesto">Repuesto</option><option value="Accesorio">Accesorio</option></select>
         <input type="text" id="inv-desc" placeholder="Marca / Modelo" required>
         <input type="number" id="inv-costo" placeholder="Costo base (Gs.)" required>
         <input type="number" id="inv-precio" placeholder="Precio de Venta (Gs.)" required>
         <div style="display:flex; gap:10px;"><input type="number" id="inv-stock" placeholder="Cant." required style="width:50%"><input type="number" id="inv-min" placeholder="Aviso min." required value="1" style="width:50%"></div>
-        <label style="font-size: 0.9rem; font-weight:bold; margin-top:10px; display:flex; align-items:center; gap:8px;">
-          <input type="checkbox" id="inv-gasto" style="width:auto;"> Restar compra de la Caja Diaria
-        </label>
-        <p style="font-size:0.75rem; color:#64748b; margin-top:0;">Desmarca la casilla si es stock que ya tenías guardado.</p>
+        <label style="font-size: 0.9rem; font-weight:bold; margin-top:10px; display:flex; align-items:center; gap:8px;"><input type="checkbox" id="inv-gasto" style="width:auto;"> Restar compra de la Caja</label>
         <button type="submit" class="btn-submit" id="btn-inv">Agregar al Stock</button>
       </form>
-    </div>
-  </div>
+  </div></div>
 
-  <div id="modal-caja" class="modal">
-    <div class="modal-content"><span class="close" onclick="cerrarModal('modal-caja')">&times;</span><h2><i class="fas fa-cash-register"></i> Caja Diaria</h2>
+  <div id="modal-caja" class="modal"><div class="modal-content"><span class="close" onclick="cerrarModal('modal-caja')">&times;</span><h2><i class="fas fa-cash-register"></i> Caja Diaria</h2>
       <form id="form-caja" onsubmit="enviarCaja(event)">
         <select id="caja-tipo" required><option value="Egreso">🔴 GASTO RÁPIDO (Ej. Comida)</option><option value="Ingreso">🟢 INGRESO EXTRA / Ajuste Capital</option></select>
         <input type="text" id="caja-concepto" placeholder="¿En qué? (Ej. Almuerzo)" required>
@@ -110,29 +96,31 @@
         <select id="caja-metodo" required><option value="Efectivo">Efectivo</option><option value="Transferencia">Transferencia</option></select>
         <button type="submit" class="btn-submit" id="btn-caja">Guardar Movimiento</button>
       </form>
-    </div>
-  </div>
+  </div></div>
 
-  <div id="modal-deuda" class="modal">
-    <div class="modal-content"><span class="close" onclick="cerrarModal('modal-deuda')">&times;</span><h2><i class="fas fa-file-invoice-dollar"></i> Servicios y Deudas</h2>
+  <div id="modal-deuda" class="modal"><div class="modal-content"><span class="close" onclick="cerrarModal('modal-deuda')">&times;</span><h2><i class="fas fa-file-invoice-dollar"></i> Servicios y Deudas</h2>
       <form id="form-deuda" onsubmit="enviarDeuda(event)">
         <select id="deu-categoria" required><option value="">Selecciona qué vas a registrar...</option><option value="Servicio (Luz/Agua)">Servicio (Luz/Agua)</option><option value="Internet/Telefonía">Internet/Telefonía</option><option value="Préstamo">Préstamo Financiero</option><option value="Tarjeta de Crédito">Tarjeta de Crédito</option><option value="Alquiler/Otro">Alquiler / Otro</option></select>
-        <input type="text" id="deu-acreedor" placeholder="Nombre (Ej. ANDE, Tigo, Banco Itaú)" required>
-        <div id="div-deuda-cuotas" style="display:flex; flex-direction:column; gap:12px; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <input type="text" id="deu-acreedor" placeholder="Nombre (Ej. ANDE, Tigo, Itaú)" required>
+        <div style="display:flex; flex-direction:column; gap:12px; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
            <label style="font-size: 0.85rem; color: #64748b; font-weight: bold;">Si es préstamo o tarjeta (Opcional):</label>
            <input type="number" id="deu-monto-total" placeholder="Deuda Total a pagar (Gs.)">
-           <div style="display:flex; gap:10px; align-items:center;"><input type="number" id="deu-cuota-actual" placeholder="Cuota N° (Ej: 1)" style="width:50%"><input type="number" id="deu-cuota-total" placeholder="De cuantas? (Ej: 12)" style="width:50%"></div>
+           <div style="display:flex; gap:10px; align-items:center;"><input type="number" id="deu-cuota-actual" placeholder="Cuota N°" style="width:50%"><input type="number" id="deu-cuota-total" placeholder="De cuantas?" style="width:50%"></div>
         </div>
-        <input type="number" id="deu-monto-cuota" placeholder="Monto mensual (Gs.)" required>
+        <input type="number" id="deu-monto-cuota" placeholder="Monto mensual (Vacío si es Tarjeta)">
         <label style="font-size: 0.9rem; margin-top:5px; font-weight:bold;">¿Qué día del mes vence?</label>
         <input type="number" id="deu-dia" placeholder="Día del mes (Ej: 15)" min="1" max="31" required>
         <button type="submit" class="btn-submit" id="btn-deu">Guardar Registro</button>
       </form>
-    </div>
-  </div>
+  </div></div>
 
-  <div id="modal-cobro" class="modal">
-    <div class="modal-content"><span class="close" onclick="cerrarModal('modal-cobro')">&times;</span><h2><i class="fas fa-hand-holding-usd"></i> Cobrar Reparación</h2>
+  <!-- ================= MODALES DE VISUALIZACIÓN, PAGO Y EDICIÓN ================= -->
+  
+  <div id="modal-lista-stock" class="modal"><div class="modal-content" style="max-height:80vh; overflow-y:auto; width:95%;"><span class="close" onclick="cerrarModal('modal-lista-stock')">&times;</span><h2><i class="fas fa-boxes"></i> Inventario</h2><ul id="ul-stock" class="lista-visualizacion"></ul></div></div>
+  <div id="modal-lista-taller" class="modal"><div class="modal-content" style="max-height:80vh; overflow-y:auto; width:95%;"><span class="close" onclick="cerrarModal('modal-lista-taller')">&times;</span><h2><i class="fas fa-tools"></i> Taller</h2><ul id="ul-taller" class="lista-visualizacion"></ul></div></div>
+  <div id="modal-lista-deudas" class="modal"><div class="modal-content" style="max-height:80vh; overflow-y:auto; width:95%;"><span class="close" onclick="cerrarModal('modal-lista-deudas')">&times;</span><h2><i class="fas fa-file-invoice-dollar"></i> Obligaciones</h2><ul id="ul-deudas" class="lista-visualizacion"></ul></div></div>
+
+  <div id="modal-cobro" class="modal"><div class="modal-content"><span class="close" onclick="cerrarModal('modal-cobro')">&times;</span><h2><i class="fas fa-hand-holding-usd"></i> Cobrar Reparación</h2>
       <form id="form-cobro" onsubmit="enviarCobroTaller(event)">
         <input type="hidden" id="cob-id">
         <input type="text" id="cob-info" readonly style="background:#e2e8f0; color:#64748b; font-weight:bold; border:none;">
@@ -141,28 +129,57 @@
         <select id="cob-metodo" required><option value="Efectivo">Efectivo</option><option value="Transferencia">Transferencia</option></select>
         <button type="submit" class="btn-submit" id="btn-cob">Entregar y Cobrar</button>
       </form>
-    </div>
-  </div>
+  </div></div>
 
-  <!-- ================= MODALES DE VISUALIZACIÓN Y PAGOS ================= -->
-  
-  <div id="modal-lista-stock" class="modal"><div class="modal-content" style="max-height:80vh; overflow-y:auto;"><span class="close" onclick="cerrarModal('modal-lista-stock')">&times;</span><h2><i class="fas fa-boxes"></i> Inventario Actual</h2><ul id="ul-stock" class="lista-visualizacion"></ul></div></div>
-  <div id="modal-lista-taller" class="modal"><div class="modal-content" style="max-height:80vh; overflow-y:auto;"><span class="close" onclick="cerrarModal('modal-lista-taller')">&times;</span><h2><i class="fas fa-tools"></i> Equipos en Taller</h2><ul id="ul-taller" class="lista-visualizacion"></ul></div></div>
-  <div id="modal-lista-deudas" class="modal"><div class="modal-content" style="max-height:80vh; overflow-y:auto;"><span class="close" onclick="cerrarModal('modal-lista-deudas')">&times;</span><h2><i class="fas fa-file-invoice-dollar"></i> Pagar Obligaciones</h2><ul id="ul-deudas" class="lista-visualizacion"></ul></div></div>
-
-  <div id="modal-pago-confirmar" class="modal">
-    <div class="modal-content"><span class="close" onclick="cerrarModal('modal-pago-confirmar')">&times;</span><h2><i class="fas fa-money-check-alt"></i> Confirmar Pago</h2>
+  <div id="modal-pago-confirmar" class="modal"><div class="modal-content"><span class="close" onclick="cerrarModal('modal-pago-confirmar')">&times;</span><h2><i class="fas fa-money-check-alt"></i> Confirmar Pago</h2>
       <form id="form-pago-deuda" onsubmit="enviarPagoDeuda(event)">
         <input type="hidden" id="pag-fila"><input type="hidden" id="pag-acreedor">
         <p id="pag-info" style="font-weight:bold; color:var(--primary); margin-bottom: 5px; background: #f1f5f9; padding: 10px; border-radius: 8px;"></p>
-        <label style="font-size: 0.9rem; margin-top:10px; font-weight:bold;">Monto a descontar de Caja:</label>
+        <label style="font-size: 0.9rem; margin-top:10px; font-weight:bold;">Monto a descontar (Modifica si hay intereses/punitorios):</label>
         <input type="number" id="pag-monto" required>
         <label style="font-size: 0.9rem; margin-top:10px; font-weight:bold;">¿De dónde salió la plata?</label>
         <select id="pag-metodo" required><option value="Efectivo">Efectivo (Caja)</option><option value="Transferencia">Banco / Transferencia</option></select>
         <button type="submit" class="btn-submit" id="btn-pagar" style="background:var(--accent);">Efectuar Pago</button>
       </form>
-    </div>
-  </div>
+  </div></div>
+
+  <!-- Formularios Ocultos para Editar -->
+  <div id="modal-edit-inv" class="modal"><div class="modal-content"><span class="close" onclick="cerrarModal('modal-edit-inv')">&times;</span><h2><i class="fas fa-pen"></i> Editar Inventario</h2>
+      <form id="form-edit-inv" onsubmit="enviarEditInv(event)">
+        <input type="hidden" id="ei-id">
+        <select id="ei-tipo" required><option value="Notebook">Notebook</option><option value="Repuesto">Repuesto</option><option value="Accesorio">Accesorio</option></select>
+        <input type="text" id="ei-desc" required>
+        <input type="number" id="ei-costo" required>
+        <input type="number" id="ei-precio" required>
+        <div style="display:flex; gap:10px;"><input type="number" id="ei-stock" required style="width:50%"><input type="number" id="ei-min" required style="width:50%"></div>
+        <button type="submit" class="btn-submit" id="btn-ei">Guardar Cambios</button>
+      </form>
+  </div></div>
+
+  <div id="modal-edit-taller" class="modal"><div class="modal-content"><span class="close" onclick="cerrarModal('modal-edit-taller')">&times;</span><h2><i class="fas fa-pen"></i> Editar Taller</h2>
+      <form id="form-edit-taller" onsubmit="enviarEditTaller(event)">
+        <input type="hidden" id="et-id">
+        <input type="text" id="et-cliente" required>
+        <input type="text" id="et-equipo" required>
+        <input type="text" id="et-falla" required>
+        <input type="number" id="et-presupuesto" required>
+        <button type="submit" class="btn-submit" id="btn-et">Guardar Cambios</button>
+      </form>
+  </div></div>
+
+  <div id="modal-edit-deuda" class="modal"><div class="modal-content"><span class="close" onclick="cerrarModal('modal-edit-deuda')">&times;</span><h2><i class="fas fa-pen"></i> Editar Deuda</h2>
+      <form id="form-edit-deuda" onsubmit="enviarEditDeuda(event)">
+        <input type="hidden" id="ed-fila">
+        <input type="text" id="ed-acreedor" required>
+        <div style="display:flex; flex-direction:column; gap:10px; background: #f8fafc; padding: 10px; border: 1px solid #e2e8f0;">
+           <input type="number" id="ed-total" placeholder="Deuda Total">
+           <div style="display:flex; gap:10px;"><input type="number" id="ed-cuota-actual" placeholder="Cuota N°"><input type="number" id="ed-cuota-total" placeholder="Totales"></div>
+        </div>
+        <input type="number" id="ed-monto" placeholder="Monto mensual (Vacío si Tarjeta)">
+        <input type="number" id="ed-dia" min="1" max="31" required>
+        <button type="submit" class="btn-submit" id="btn-ed">Guardar Cambios</button>
+      </form>
+  </div></div>
 
   <script src="app.js"></script>
 </body>
