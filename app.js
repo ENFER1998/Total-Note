@@ -1,48 +1,157 @@
-// =========================================================================
-// 3. MOTOR DE ESCRITURA DEFINITIVO (Recibe datos de la web y los guarda)
-// =========================================================================
-function doPost(e) {
-  try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    let p = JSON.parse(e.postData.contents);
-    
-    // Obtener fecha y hora de Asunción, Paraguay
-    let fechaHoy = new Date().toLocaleString("es-PY", {timeZone: "America/Asuncion"});
-    let idUnico = Math.floor(Math.random() * 100000);
+// TU ENLACE ACTUAL (No lo cambies a menos que hagas un Deploy nuevo con otro link)
+const URL_APPS_SCRIPT = "https://script.google.com/macros/s/AKfycbziOBMxs0Xy1tO4gc18j5ZchSU-e8cN3IEEL0U3kw1ymGl7Gf8XA-Fqwp0O2CIIljT13A/exec";
 
-    if (p.accion === "venta") {
-      // 1. Registrar ingreso en Caja (Precio de venta)
-      ss.getSheetByName("Caja_General").appendRow(["TX-VEN-"+idUnico, fechaHoy, "Ingreso", "Ventas", p.producto, p.total, p.metodo]);
-      // 2. Descontar stock
-      let hojaInv = ss.getSheetByName("Inventario");
-      let dataInv = hojaInv.getDataRange().getValues();
-      for (let i = 1; i < dataInv.length; i++) {
-        if (dataInv[i][0] == p.idProducto) { // Buscar por ID
-          let stockActual = parseInt(dataInv[i][5]) || 0;
-          hojaInv.getRange(i + 1, 6).setValue(stockActual - parseInt(p.cantidad));
-          break;
-        }
-      }
-    } 
-    else if (p.accion === "caja") {
-      // Registrar cualquier Gasto o Ingreso extra
-      ss.getSheetByName("Caja_General").appendRow(["TX-"+p.tipo.substring(0,3)+"-"+idUnico, fechaHoy, p.tipo, p.categoria, p.concepto, p.monto, p.metodo]);
-    }
-    else if (p.accion === "taller") {
-      // Ingresar equipo a reparar
-      ss.getSheetByName("Taller").appendRow(["REP-"+idUnico, fechaHoy, p.cliente, p.equipo, p.falla, "Pendiente", 0, 0]);
-    }
-    else if (p.accion === "inventario") {
-      // Comprar nueva mercadería
-      ss.getSheetByName("Inventario").appendRow(["PROD-"+idUnico, p.tipo, p.descripcion, p.costo, p.precio, p.stock, p.minimo]);
-      // Opcional: Registrar el gasto de esta compra en caja
-      if(p.registrarGasto) {
-         ss.getSheetByName("Caja_General").appendRow(["TX-COM-"+idUnico, fechaHoy, "Egreso", "Compra Mercadería", p.descripcion, (p.costo * p.stock), "Efectivo"]);
-      }
-    }
+// Variable global para guardar los productos y sus precios
+let stockDisponible = [];
 
-    return ContentService.createTextOutput(JSON.stringify({ "exito": true })).setMimeType(ContentService.MimeType.JSON);
-  } catch (error) {
-    return ContentService.createTextOutput(JSON.stringify({ "exito": false, "error": error.message })).setMimeType(ContentService.MimeType.JSON);
+document.addEventListener("DOMContentLoaded", () => { obtenerDatosAPI(); });
+
+function obtenerDatosAPI() {
+  fetch(URL_APPS_SCRIPT)
+    .then(r => r.json())
+    .then(datos => actualizarDashboard(datos))
+    .catch(e => { document.getElementById('loader').innerHTML = `<p style="color:red;">Error de conexión.</p>`; });
+}
+
+function actualizarDashboard(datos) {
+  document.getElementById('loader').style.display = 'none';
+  document.getElementById('main-content').style.display = 'block';
+
+  let moneda = new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG' });
+
+  // 1. Balance Mensual
+  document.getElementById('val-ingresos').innerText = moneda.format(datos.ingresosMes || 0);
+  document.getElementById('val-egresos').innerText = moneda.format(datos.egresosMes || 0);
+  
+  let neto = (datos.ingresosMes || 0) - (datos.egresosMes || 0);
+  let elNeto = document.getElementById('val-neto');
+  elNeto.innerText = moneda.format(neto);
+  elNeto.style.color = neto < 0 ? "#ef4444" : "#10b981"; // Rojo si pierdes, verde si ganas
+
+  // 2. Patrimonio (Inventario y Taller)
+  document.getElementById('val-capital').innerText = moneda.format(datos.capitalInventario || 0);
+  document.getElementById('val-taller').innerText = moneda.format(datos.proyeccionTaller || 0);
+
+  // 3. Rellenar opciones de Venta
+  stockDisponible = datos.productosStock || [];
+  let selectVenta = document.getElementById('ven-producto');
+  selectVenta.innerHTML = '<option value="">Selecciona qué vas a vender...</option>';
+  stockDisponible.forEach(prod => {
+    // prod.id, prod.nombre, prod.precio
+    selectVenta.innerHTML += `<option value="${prod.id}">${prod.nombre} - ${moneda.format(prod.precio)}</option>`;
+  });
+
+  // 4. Alertas (Stock y Deudas)
+  let lista = document.getElementById('lista-alertas');
+  lista.innerHTML = '';
+  let hayAlertas = false;
+
+  if (datos.stockBajo && datos.stockBajo.length > 0) {
+    datos.stockBajo.forEach(aviso => {
+      lista.innerHTML += `<li><span><i class="fas fa-box" style="color:#f59e0b"></i> ${aviso}</span><span class="texto-rojo">Comprar</span></li>`;
+      hayAlertas = true;
+    });
   }
+  if (datos.alertasDeuda && datos.alertasDeuda.length > 0) {
+    datos.alertasDeuda.forEach(deuda => {
+      lista.innerHTML += `<li><span><i class="fas fa-file-invoice-dollar" style="color:#ef4444"></i> ${deuda.acreedor} (Cuota ${deuda.cuotaInfo})</span><span class="texto-rojo">Vence en ${deuda.diasFaltantes}d</span></li>`;
+      hayAlertas = true;
+    });
+  }
+
+  if (!hayAlertas) {
+    lista.innerHTML = '<li><span style="color: #10b981;"><i class="fas fa-check-circle"></i> Todo está en orden. No hay alertas.</span></li>';
+  }
+}
+
+// Autocompletar precio de venta
+function autocompletarPrecio() {
+  let idSeleccionado = document.getElementById('ven-producto').value;
+  let producto = stockDisponible.find(p => p.id == idSeleccionado);
+  if (producto) {
+    let cant = document.getElementById('ven-cantidad').value || 1;
+    document.getElementById('ven-total').value = producto.precio * cant;
+  }
+}
+
+// Mostrar Modales
+function abrirModal(id) { document.getElementById(id).classList.add('mostrar'); }
+function cerrarModal(id) { document.getElementById(id).classList.remove('mostrar'); }
+window.onclick = function(e) { if (e.target.classList.contains('modal')) e.target.classList.remove('mostrar'); }
+
+// ================= ENVIAR DATOS A GOOGLE SHEETS =================
+
+function enviarVenta(e) {
+  e.preventDefault();
+  let idProd = document.getElementById('ven-producto').value;
+  let prodNombre = document.getElementById('ven-producto').options[document.getElementById('ven-producto').selectedIndex].text.split(" - ")[0];
+  let datos = {
+    accion: 'venta',
+    idProducto: idProd,
+    producto: prodNombre,
+    cantidad: document.getElementById('ven-cantidad').value,
+    total: document.getElementById('ven-total').value,
+    metodo: document.getElementById('ven-metodo').value
+  };
+  procesarEnvio(datos, 'modal-venta', 'form-venta', 'btn-ven');
+}
+
+function enviarCaja(e) {
+  e.preventDefault();
+  let datos = {
+    accion: 'caja',
+    tipo: document.getElementById('caja-tipo').value,
+    concepto: document.getElementById('caja-concepto').value,
+    categoria: document.getElementById('caja-categoria').value,
+    monto: document.getElementById('caja-monto').value,
+    metodo: document.getElementById('caja-metodo').value
+  };
+  procesarEnvio(datos, 'modal-caja', 'form-caja', 'btn-caja');
+}
+
+function enviarTaller(e) {
+  e.preventDefault();
+  let datos = {
+    accion: 'taller',
+    cliente: document.getElementById('tal-cliente').value,
+    equipo: document.getElementById('tal-equipo').value,
+    falla: document.getElementById('tal-falla').value
+  };
+  procesarEnvio(datos, 'modal-taller', 'form-taller', 'btn-tal');
+}
+
+function enviarInventario(e) {
+  e.preventDefault();
+  let datos = {
+    accion: 'inventario',
+    tipo: document.getElementById('inv-tipo').value,
+    descripcion: document.getElementById('inv-desc').value,
+    costo: document.getElementById('inv-costo').value,
+    precio: document.getElementById('inv-precio').value,
+    stock: document.getElementById('inv-stock').value,
+    minimo: document.getElementById('inv-min').value,
+    registrarGasto: document.getElementById('inv-gasto').checked
+  };
+  procesarEnvio(datos, 'modal-inventario', 'form-inventario', 'btn-inv');
+}
+
+function procesarEnvio(datos, idModal, idForm, idBtn) {
+  let btn = document.getElementById(idBtn); 
+  let textoOrig = btn.innerText; 
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...'; 
+  btn.disabled = true;
+
+  fetch(URL_APPS_SCRIPT, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(datos) })
+  .then(r => r.json())
+  .then(res => {
+    if (res.exito) {
+      cerrarModal(idModal); 
+      document.getElementById(idForm).reset();
+      document.getElementById('main-content').style.display = 'none'; 
+      document.getElementById('loader').style.display = 'block';
+      obtenerDatosAPI(); // Refrescar tablero con los nuevos números
+    } else alert("Error del servidor: " + res.error);
+  })
+  .catch(e => alert("Error de red. Revisa tu conexión."))
+  .finally(() => { btn.innerText = textoOrig; btn.disabled = false; });
 }
