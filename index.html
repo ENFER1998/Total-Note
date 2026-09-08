@@ -2,8 +2,8 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Total Note - Gestión</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Total Note</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -11,99 +11,130 @@
 
   <header>
     <h1><i class="fas fa-laptop-code"></i> Total Note</h1>
-    <p>Sistema de Gestión y Finanzas</p>
+    <p>Centro de Control Mundial</p>
   </header>
 
-  <div id="loader">
-    <div class="spinner"></div>
-    <p>Sincronizando con base de datos...</p>
-  </div>
+  <div id="loader"><div class="spinner"></div><p>Sincronizando sistema...</p></div>
 
   <main id="main-content" style="display: none;">
-    <!-- Tarjetas de Resumen -->
+    
+    <!-- Balance del Mes -->
+    <div class="balance-card">
+      <h3>Balance de Septiembre</h3>
+      <h2 id="val-neto">Gs. 0</h2>
+      <div class="balance-detalles">
+        <div class="ingreso"><i class="fas fa-arrow-up"></i> <span id="val-ingresos">0</span></div>
+        <div class="egreso"><i class="fas fa-arrow-down"></i> <span id="val-egresos">0</span></div>
+      </div>
+    </div>
+
+    <!-- Patrimonio -->
     <div class="dashboard-grid">
-      <div class="card"><div class="card-icon icon-blue"><i class="fas fa-box"></i></div><div class="card-info"><h3>Stock Notebooks</h3><p id="val-stock">-</p></div></div>
-      <div class="card"><div class="card-icon icon-orange"><i class="fas fa-tools"></i></div><div class="card-info"><h3>En Taller</h3><p id="val-rep">-</p></div></div>
-      <div class="card"><div class="card-icon icon-red"><i class="fas fa-file-invoice-dollar"></i></div><div class="card-info"><h3>Deuda / Pagos Pend.</h3><p id="val-deuda">-</p></div></div>
+      <div class="card">
+        <div class="card-icon icon-blue"><i class="fas fa-boxes"></i></div>
+        <div class="card-info"><h3>Capital en Stock</h3><p id="val-capital">-</p></div>
+      </div>
+      <div class="card">
+        <div class="card-icon icon-orange"><i class="fas fa-tools"></i></div>
+        <div class="card-info"><h3>Por cobrar (Taller)</h3><p id="val-taller">-</p></div>
+      </div>
     </div>
 
-    <!-- Sección de Alertas -->
-    <div class="alertas-section">
-      <h3><i class="fas fa-bell"></i> Vencimientos Próximos</h3>
-      <ul id="lista-alertas" class="lista-alertas">
-        <!-- Las alertas se cargarán aquí por JS -->
-      </ul>
+    <!-- Alertas Automáticas -->
+    <div class="alertas-section" id="seccion-alertas">
+      <h3><i class="fas fa-bell"></i> Alertas del Sistema</h3>
+      <ul id="lista-alertas" class="lista-alertas"></ul>
     </div>
 
-    <!-- Menú de Acciones -->
-    <div class="acciones">
-      <button class="btn btn-inventario" onclick="abrirModal('modal-inventario')"><i class="fas fa-plus-circle"></i> Nuevo Producto</button>
-      <button class="btn btn-taller" onclick="abrirModal('modal-reparacion')"><i class="fas fa-wrench"></i> Ingresar Equipo</button>
-      <button class="btn btn-finanzas" onclick="abrirModal('modal-finanza')"><i class="fas fa-hand-holding-usd"></i> Registrar Pago/Deuda</button>
+    <!-- Botonera Flotante (Tipo App) -->
+    <div class="acciones-grid">
+      <button class="btn-app btn-venta" onclick="abrirModal('modal-venta')"><i class="fas fa-shopping-cart"></i><span>Vender</span></button>
+      <button class="btn-app btn-caja" onclick="abrirModal('modal-caja')"><i class="fas fa-cash-register"></i><span>Caja</span></button>
+      <button class="btn-app btn-taller" onclick="abrirModal('modal-taller')"><i class="fas fa-wrench"></i><span>Taller</span></button>
+      <button class="btn-app btn-inv" onclick="abrirModal('modal-inventario')"><i class="fas fa-box-open"></i><span>Comprar</span></button>
     </div>
   </main>
 
-  <!-- ================= MODALES (VENTANAS FLOTANTES) ================= -->
+  <!-- ================= MODALES ================= -->
   
+  <!-- Modal Venta -->
+  <div id="modal-venta" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="cerrarModal('modal-venta')">&times;</span>
+      <h2><i class="fas fa-shopping-cart"></i> Nueva Venta</h2>
+      <form id="form-venta" onsubmit="enviarVenta(event)">
+        <select id="ven-producto" required onchange="autocompletarPrecio()"><option value="">Selecciona qué vas a vender...</option></select>
+        <div style="display:flex; gap:10px;">
+          <input type="number" id="ven-cantidad" placeholder="Cant." required value="1" style="width:30%">
+          <input type="number" id="ven-total" placeholder="Total a cobrar (Gs.)" required style="width:70%">
+        </div>
+        <select id="ven-metodo" required>
+          <option value="Efectivo">Efectivo</option>
+          <option value="Transferencia">Transferencia</option>
+          <option value="POS / Tarjeta">POS / Tarjeta</option>
+        </select>
+        <button type="submit" class="btn-submit" id="btn-ven">Registrar Venta</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Caja (Gastos e Ingresos) -->
+  <div id="modal-caja" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="cerrarModal('modal-caja')">&times;</span>
+      <h2><i class="fas fa-cash-register"></i> Movimiento de Caja</h2>
+      <form id="form-caja" onsubmit="enviarCaja(event)">
+        <select id="caja-tipo" required style="font-weight:bold;">
+          <option value="Egreso">🔴 Registrar un GASTO / PAGO</option>
+          <option value="Ingreso">🟢 Registrar un INGRESO EXTRA</option>
+        </select>
+        <input type="text" id="caja-concepto" placeholder="¿En qué? (Ej. Pago de Luz, Almuerzo...)" required>
+        <select id="caja-categoria" required>
+          <option value="Servicios Básicos">Servicios (Luz/Agua/Internet)</option>
+          <option value="Alimentación">Alimentación</option>
+          <option value="Herramientas/Insumos">Herramientas / Insumos de Taller</option>
+          <option value="Pago Deudas">Pago de Cuota / Préstamo</option>
+          <option value="Otros">Otros</option>
+        </select>
+        <input type="number" id="caja-monto" placeholder="Monto (Gs.)" required>
+        <select id="caja-metodo" required><option value="Efectivo">Efectivo</option><option value="Transferencia">Transferencia</option></select>
+        <button type="submit" class="btn-submit" id="btn-caja">Guardar Movimiento</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Taller -->
+  <div id="modal-taller" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="cerrarModal('modal-taller')">&times;</span>
+      <h2><i class="fas fa-wrench"></i> Recepción de Taller</h2>
+      <form id="form-taller" onsubmit="enviarTaller(event)">
+        <input type="text" id="tal-cliente" placeholder="Nombre del Cliente" required>
+        <input type="text" id="tal-equipo" placeholder="Equipo (Ej. Notebook Dell i5)" required>
+        <input type="text" id="tal-falla" placeholder="Falla reportada (Ej. No enciende)" required>
+        <button type="submit" class="btn-submit" id="btn-tal">Ingresar Equipo</button>
+      </form>
+    </div>
+  </div>
+
   <!-- Modal Inventario -->
   <div id="modal-inventario" class="modal">
     <div class="modal-content">
       <span class="close" onclick="cerrarModal('modal-inventario')">&times;</span>
-      <h2><i class="fas fa-box"></i> Agregar al Inventario</h2>
+      <h2><i class="fas fa-box-open"></i> Nueva Mercadería</h2>
       <form id="form-inventario" onsubmit="enviarInventario(event)">
-        <select id="inv-tipo" required>
-          <option value="Notebook">Notebook</option>
-          <option value="Repuesto">Repuesto</option>
-        </select>
-        <input type="text" id="inv-detalle" placeholder="Marca / Modelo / Características" required>
+        <select id="inv-tipo" required><option value="Notebook">Notebook</option><option value="Repuesto">Repuesto</option><option value="Accesorio">Accesorio</option></select>
+        <input type="text" id="inv-desc" placeholder="Marca / Modelo" required>
         <input type="number" id="inv-costo" placeholder="Costo de compra (Gs.)" required>
         <input type="number" id="inv-precio" placeholder="Precio de Venta (Gs.)" required>
-        <input type="number" id="inv-stock" placeholder="Cantidad en Stock" required>
-        <button type="submit" class="btn-submit" id="btn-inv">Guardar Producto</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal Reparación -->
-  <div id="modal-reparacion" class="modal">
-    <div class="modal-content">
-      <span class="close" onclick="cerrarModal('modal-reparacion')">&times;</span>
-      <h2><i class="fas fa-tools"></i> Ingresar al Taller</h2>
-      <form id="form-reparacion" onsubmit="enviarReparacion(event)">
-        <input type="text" id="rep-cliente" placeholder="Nombre del Cliente" required>
-        <input type="text" id="rep-contacto" placeholder="Teléfono" required>
-        <input type="text" id="rep-equipo" placeholder="Equipo (Ej. Notebook HP)" required>
-        <input type="text" id="rep-falla" placeholder="Falla reportada" required>
-        <input type="number" id="rep-presupuesto" placeholder="Presupuesto (Gs.)">
-        <button type="submit" class="btn-submit" id="btn-rep">Guardar Ingreso</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal Finanzas -->
-  <div id="modal-finanza" class="modal">
-    <div class="modal-content">
-      <span class="close" onclick="cerrarModal('modal-finanza')">&times;</span>
-      <h2><i class="fas fa-file-invoice-dollar"></i> Registrar Finanzas</h2>
-      <form id="form-finanza" onsubmit="enviarFinanza(event)">
-        <input type="text" id="fin-concepto" placeholder="Concepto (Ej. Préstamo Banco, ANDE, Claro)" required>
-        <select id="fin-categoria" onchange="toggleCuotas()" required>
-          <option value="Servicios (Luz/Internet/Tel)">Servicios (Luz/Internet/Tel)</option>
-          <option value="Préstamo">Préstamo</option>
-          <option value="Tarjeta de Crédito">Tarjeta de Crédito</option>
-          <option value="Gasto Local">Gasto de Local / Varios</option>
-        </select>
-        <input type="number" id="fin-monto" placeholder="Monto de la cuota/factura (Gs.)" required>
-        
-        <!-- Contenedor que solo aparece si es Préstamo o Tarjeta -->
-        <div id="div-cuotas" style="display:none; gap: 10px;">
-          <input type="number" id="fin-cuota-actual" placeholder="Cuota actual N° (Ej: 2)" style="width: 50%;">
-          <input type="number" id="fin-cuota-total" placeholder="De cuantas? (Ej: 12)" style="width: 50%;">
+        <div style="display:flex; gap:10px;">
+          <input type="number" id="inv-stock" placeholder="Cant. Comprada" required style="width:50%">
+          <input type="number" id="inv-min" placeholder="Aviso min." required value="1" style="width:50%">
         </div>
-
-        <label style="color:#7f8c8d; font-size:14px; margin-bottom:-5px;">Fecha de Vencimiento:</label>
-        <input type="date" id="fin-fecha" required>
-        <button type="submit" class="btn-submit" id="btn-fin">Guardar Registro</button>
+        <label style="font-size: 14px; display:flex; align-items:center; gap:5px; margin-top:5px;">
+          <input type="checkbox" id="inv-gasto" checked> Restar costo de la Caja General
+        </label>
+        <button type="submit" class="btn-submit" id="btn-inv">Agregar al Stock</button>
       </form>
     </div>
   </div>
