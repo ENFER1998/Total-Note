@@ -1,132 +1,48 @@
-const URL_APPS_SCRIPT = "https://script.google.com/macros/s/AKfycbziOBMxs0Xy1tO4gc18j5ZchSU-e8cN3IEEL0U3kw1ymGl7Gf8XA-Fqwp0O2CIIljT13A/exec";
+// =========================================================================
+// 3. MOTOR DE ESCRITURA DEFINITIVO (Recibe datos de la web y los guarda)
+// =========================================================================
+function doPost(e) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let p = JSON.parse(e.postData.contents);
+    
+    // Obtener fecha y hora de Asunción, Paraguay
+    let fechaHoy = new Date().toLocaleString("es-PY", {timeZone: "America/Asuncion"});
+    let idUnico = Math.floor(Math.random() * 100000);
 
-document.addEventListener("DOMContentLoaded", () => { obtenerDatosAPI(); });
+    if (p.accion === "venta") {
+      // 1. Registrar ingreso en Caja (Precio de venta)
+      ss.getSheetByName("Caja_General").appendRow(["TX-VEN-"+idUnico, fechaHoy, "Ingreso", "Ventas", p.producto, p.total, p.metodo]);
+      // 2. Descontar stock
+      let hojaInv = ss.getSheetByName("Inventario");
+      let dataInv = hojaInv.getDataRange().getValues();
+      for (let i = 1; i < dataInv.length; i++) {
+        if (dataInv[i][0] == p.idProducto) { // Buscar por ID
+          let stockActual = parseInt(dataInv[i][5]) || 0;
+          hojaInv.getRange(i + 1, 6).setValue(stockActual - parseInt(p.cantidad));
+          break;
+        }
+      }
+    } 
+    else if (p.accion === "caja") {
+      // Registrar cualquier Gasto o Ingreso extra
+      ss.getSheetByName("Caja_General").appendRow(["TX-"+p.tipo.substring(0,3)+"-"+idUnico, fechaHoy, p.tipo, p.categoria, p.concepto, p.monto, p.metodo]);
+    }
+    else if (p.accion === "taller") {
+      // Ingresar equipo a reparar
+      ss.getSheetByName("Taller").appendRow(["REP-"+idUnico, fechaHoy, p.cliente, p.equipo, p.falla, "Pendiente", 0, 0]);
+    }
+    else if (p.accion === "inventario") {
+      // Comprar nueva mercadería
+      ss.getSheetByName("Inventario").appendRow(["PROD-"+idUnico, p.tipo, p.descripcion, p.costo, p.precio, p.stock, p.minimo]);
+      // Opcional: Registrar el gasto de esta compra en caja
+      if(p.registrarGasto) {
+         ss.getSheetByName("Caja_General").appendRow(["TX-COM-"+idUnico, fechaHoy, "Egreso", "Compra Mercadería", p.descripcion, (p.costo * p.stock), "Efectivo"]);
+      }
+    }
 
-function obtenerDatosAPI() {
-  fetch(URL_APPS_SCRIPT)
-    .then(r => r.json())
-    .then(datos => actualizarDashboard(datos))
-    .catch(e => {
-      document.getElementById('loader').innerHTML = `<p style="color:red;">Error de conexión.</p>`;
-    });
-}
-
-function actualizarDashboard(datos) {
-  document.getElementById('loader').style.display = 'none';
-  document.getElementById('main-content').style.display = 'block';
-
-  document.getElementById('val-stock').innerText = datos.stockNotebooks || 0;
-  document.getElementById('val-rep').innerText = datos.reparacionesPendientes || 0;
-  
-  let moneda = new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG' });
-  document.getElementById('val-deuda').innerText = moneda.format(datos.deudaTotal || 0);
-
-  // Cargar Alertas
-  let lista = document.getElementById('lista-alertas');
-  lista.innerHTML = '';
-  if (datos.alertas && datos.alertas.length > 0) {
-    datos.alertas.forEach(alerta => {
-      let estado = alerta.dias < 0 ? "¡VENCIDO!" : (alerta.dias === 0 ? "Vence HOY" : `Vence en ${alerta.dias} días`);
-      let clase = alerta.dias <= 0 ? "alerta-urgente" : "";
-      lista.innerHTML += `
-        <li>
-          <span><strong>${alerta.concepto}</strong> <br> ${moneda.format(alerta.monto)}</span>
-          <span class="${clase}">${estado}</span>
-        </li>`;
-    });
-  } else {
-    lista.innerHTML = '<li><span style="color: green;">Todo al día. No hay vencimientos cercanos.</span></li>';
+    return ContentService.createTextOutput(JSON.stringify({ "exito": true })).setMimeType(ContentService.MimeType.JSON);
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({ "exito": false, "error": error.message })).setMimeType(ContentService.MimeType.JSON);
   }
-}
-
-// ================= MODALES =================
-function abrirModal(id) { 
-  document.getElementById(id).classList.add('mostrar'); // Usa Flex para centrar
-}
-function cerrarModal(id) { 
-  document.getElementById(id).classList.remove('mostrar'); 
-}
-
-// Cierra modal si tocas el fondo oscuro
-window.onclick = function(event) {
-  if (event.target.classList.contains('modal')) { event.target.classList.remove('mostrar'); }
-}
-
-// Mostrar ocultar cuotas en Finanzas
-function toggleCuotas() {
-  let cat = document.getElementById('fin-categoria').value;
-  let divCuotas = document.getElementById('div-cuotas');
-  if (cat === 'Préstamo' || cat === 'Tarjeta de Crédito') {
-    divCuotas.style.display = 'flex';
-  } else {
-    divCuotas.style.display = 'none';
-    document.getElementById('fin-cuota-actual').value = '';
-    document.getElementById('fin-cuota-total').value = '';
-  }
-}
-
-// ================= ENVIOS DE FORMULARIO =================
-
-function enviarInventario(e) {
-  e.preventDefault();
-  let datos = {
-    accion: 'inventario',
-    tipo: document.getElementById('inv-tipo').value,
-    detalle: document.getElementById('inv-detalle').value,
-    costo: document.getElementById('inv-costo').value,
-    precio: document.getElementById('inv-precio').value,
-    stock: document.getElementById('inv-stock').value
-  };
-  mandarDatos(datos, 'modal-inventario', 'form-inventario', 'btn-inv');
-}
-
-function enviarReparacion(e) {
-  e.preventDefault();
-  let datos = {
-    accion: 'reparacion',
-    cliente: document.getElementById('rep-cliente').value,
-    contacto: document.getElementById('rep-contacto').value,
-    equipo: document.getElementById('rep-equipo').value,
-    falla: document.getElementById('rep-falla').value,
-    presupuesto: document.getElementById('rep-presupuesto').value
-  };
-  mandarDatos(datos, 'modal-reparacion', 'form-reparacion', 'btn-rep');
-}
-
-function enviarFinanza(e) {
-  e.preventDefault();
-  let datos = {
-    accion: 'finanza',
-    concepto: document.getElementById('fin-concepto').value,
-    categoria: document.getElementById('fin-categoria').value,
-    monto: document.getElementById('fin-monto').value,
-    cuotaActual: document.getElementById('fin-cuota-actual').value || '',
-    cuotaTotal: document.getElementById('fin-cuota-total').value || '',
-    fecha: document.getElementById('fin-fecha').value
-  };
-  mandarDatos(datos, 'modal-finanza', 'form-finanza', 'btn-fin');
-}
-
-function mandarDatos(datos, idModal, idForm, idBtn) {
-  let btn = document.getElementById(idBtn);
-  let textoOrig = btn.innerText;
-  btn.innerText = "Guardando..."; btn.disabled = true;
-
-  fetch(URL_APPS_SCRIPT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
-    body: JSON.stringify(datos)
-  })
-  .then(r => r.json())
-  .then(res => {
-    if (res.exito) {
-      cerrarModal(idModal);
-      document.getElementById(idForm).reset();
-      document.getElementById('main-content').style.display = 'none';
-      document.getElementById('loader').style.display = 'block';
-      obtenerDatosAPI(); // Refrescar pantalla
-    } else { alert("Error: " + res.error); }
-  })
-  .catch(e => alert("Error de conexión"))
-  .finally(() => { btn.innerText = textoOrig; btn.disabled = false; });
 }
