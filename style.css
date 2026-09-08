@@ -23,7 +23,6 @@ h1 {
   margin-bottom: 30px;
 }
 
-/* Grid del Dashboard */
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -32,7 +31,6 @@ h1 {
   margin: 0 auto;
 }
 
-/* Tarjetas */
 .card {
   background: var(--card-bg);
   border-radius: 12px;
@@ -43,9 +41,7 @@ h1 {
   transition: transform 0.2s;
 }
 
-.card:hover {
-  transform: translateY(-5px);
-}
+.card:hover { transform: translateY(-5px); }
 
 .card-icon {
   font-size: 2.5rem;
@@ -58,30 +54,14 @@ h1 {
 .icon-orange { background: #fff3e0; color: #f39c12; }
 .icon-red { background: #fdebd0; color: var(--danger); }
 
-.card-info h3 {
-  margin: 0 0 5px 0;
-  font-size: 1rem;
-  color: var(--text-muted);
-  text-transform: uppercase;
-}
+.card-info h3 { margin: 0 0 5px 0; font-size: 1rem; color: var(--text-muted); text-transform: uppercase; }
+.card-info p { margin: 0; font-size: 1.8rem; font-weight: bold; color: var(--primary); }
 
-.card-info p {
-  margin: 0;
-  font-size: 1.8rem;
-  font-weight: bold;
-  color: var(--primary);
-}
-
-/* Loader animado */
-#loader {
-  text-align: center;
-  margin-top: 50px;
-}
+#loader { text-align: center; margin-top: 50px; }
 
 .spinner {
   border: 4px solid rgba(0,0,0,0.1);
-  width: 40px;
-  height: 40px;
+  width: 40px; height: 40px;
   border-radius: 50%;
   border-left-color: var(--accent);
   animation: spin 1s linear infinite;
@@ -93,27 +73,49 @@ h1 {
   100% { transform: rotate(360deg); } 
 }
 
-/* Menú de acciones rápidas */
 .acciones {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-  margin-top: 40px;
-  flex-wrap: wrap;
+  display: flex; justify-content: center; gap: 15px;
+  margin-top: 40px; flex-wrap: wrap;
 }
 
 .btn {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 8px;
-  background-color: var(--primary);
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  padding: 12px 24px; border: none; border-radius: 8px;
+  background-color: var(--primary); color: white;
+  font-weight: bold; cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
   transition: background-color 0.2s;
 }
 
 .btn:hover { background-color: #1a252f; }
+
+/* ================= DISEÑO DE MODALES (FORMULARIOS) ================= */
+.modal {
+  display: none; position: fixed; z-index: 1000; left: 0; top: 0;
+  width: 100%; height: 100%; overflow: auto;
+  background-color: rgba(0,0,0,0.6); backdrop-filter: blur(3px);
+}
+
+.modal-content {
+  background-color: #fff; margin: 10% auto; padding: 25px;
+  border-radius: 12px; width: 90%; max-width: 400px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.3); position: relative;
+}
+
+.close { 
+  color: #aaa; position: absolute; top: 15px; right: 20px; 
+  font-size: 28px; font-weight: bold; cursor: pointer; 
+}
+.close:hover { color: var(--danger); }
+
+.modal h2 { margin-top: 0; font-size: 1.5rem; color: var(--primary); }
+
+.modal form { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
+
+.modal input, .modal select { 
+  padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 1rem; outline: none;
+}
+
+.modal input:focus, .modal select:focus { border-color: var(--accent); }
+
+.btn-submit { background-color: var(--success); width: 100%; justify-content: center; padding: 15px;}
+.btn-submit:hover { background-color: #27ae60; }
