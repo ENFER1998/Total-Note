@@ -9,10 +9,8 @@
 </head>
 <body>
 
-  <!-- Overlay para el menú lateral -->
   <div id="menu-overlay" class="overlay" onclick="cerrarMenu()"></div>
 
-  <!-- Menú Lateral -->
   <nav id="sidebar" class="sidebar">
     <div class="sidebar-header">
       <h2>Total Note</h2>
@@ -25,7 +23,6 @@
     <a href="#" onclick="cambiarVista('vista-caja')"><i class="fas fa-cash-register"></i> Movimientos de Caja</a>
   </nav>
 
-  <!-- Encabezado Fijo -->
   <header>
     <button class="menu-btn" onclick="toggleMenu()"><i class="fas fa-bars"></i></button>
     <div>
@@ -36,7 +33,6 @@
 
   <div id="loader"><div class="spinner"></div><p>Sincronizando sistema...</p></div>
 
-  <!-- ================= VISTAS PRINCIPALES ================= -->
   <main id="main-content" style="display: none;">
     
     <section id="vista-dashboard" class="vista activa">
@@ -66,7 +62,6 @@
         <div id="grafico-gastos" style="margin-top: 15px;"></div>
       </div>
 
-      <!-- NUEVA SECCIÓN DE ALERTAS PLEGABLE -->
       <div class="alertas-section">
         <div class="alertas-header" onclick="toggleAlertas()">
           <div style="display:flex; align-items:center; gap:12px;">
@@ -79,7 +74,6 @@
           <ul id="lista-alertas" class="lista-visualizacion" style="box-shadow:none; border-radius:0;"></ul>
         </div>
       </div>
-
     </section>
 
     <section id="vista-inventario" class="vista">
@@ -111,7 +105,7 @@
       <div class="vista-header">
         <h2><i class="fas fa-cash-register"></i> Historial de Caja</h2>
       </div>
-      <button class="btn-submit" onclick="abrirModal('modal-caja')" style="margin-bottom: 20px; background:var(--accent);"><i class="fas fa-plus"></i> Registrar Gasto / Ingreso</button>
+      <button class="btn-submit" onclick="abrirModal('modal-caja')" style="margin-bottom: 20px; background:var(--accent);"><i class="fas fa-plus"></i> Registrar Movimiento</button>
       <ul id="ul-caja" class="lista-visualizacion"></ul>
     </section>
 
@@ -154,11 +148,27 @@
 
   <div id="modal-caja" class="modal"><div class="modal-content"><span class="close" onclick="cerrarModal('modal-caja')">&times;</span><h2><i class="fas fa-cash-register"></i> Movimiento de Caja</h2>
       <form id="form-caja" onsubmit="enviarCaja(event)">
-        <label class="form-label">Tipo</label><select id="caja-tipo" required><option value="Egreso">🔴 GASTO RÁPIDO</option><option value="Ingreso">🟢 INGRESO EXTRA</option></select>
-        <label class="form-label">Categoría</label><input type="text" id="caja-categoria" placeholder="Ej. Alimentación, Pasaje..." required>
-        <label class="form-label">Concepto</label><input type="text" id="caja-concepto" required>
-        <label class="form-label">Monto (Gs.)</label><input type="number" id="caja-monto" required>
-        <label class="form-label">Método</label><select id="caja-metodo" required><option value="Efectivo">Efectivo</option><option value="Transferencia">Transferencia</option></select>
+        <label class="form-label">Tipo de Operación</label>
+        <select id="caja-tipo" required onchange="cambiarCatCaja()">
+          <option value="Egreso">🔴 GASTO / SALIDA</option>
+          <option value="Ingreso">🟢 INGRESO / CAPITAL</option>
+        </select>
+        
+        <label class="form-label">Categoría</label>
+        <input type="text" id="caja-categoria" placeholder="Ej. Alimentación, Capital..." required list="lista-categorias">
+        <datalist id="lista-categorias">
+          <option value="Alimentación">
+          <option value="Transporte">
+          <option value="Ajuste Capital">
+          <option value="Herramientas">
+        </datalist>
+
+        <label class="form-label">Concepto</label>
+        <input type="text" id="caja-concepto" placeholder="Ej. Almuerzo, Capital de Inicio..." required>
+        <label class="form-label">Monto (Gs.)</label>
+        <input type="number" id="caja-monto" required>
+        <label class="form-label">Método</label>
+        <select id="caja-metodo" required><option value="Efectivo">Efectivo</option><option value="Transferencia">Transferencia</option></select>
         <button type="submit" class="btn-submit" id="btn-caja">Guardar Movimiento</button>
       </form>
   </div></div>
@@ -178,7 +188,6 @@
       </form>
   </div></div>
 
-  <!-- MODALES DE ACCIÓN Y EDICIÓN -->
   <div id="modal-cobro" class="modal"><div class="modal-content"><span class="close" onclick="cerrarModal('modal-cobro')">&times;</span><h2><i class="fas fa-hand-holding-usd"></i> Entregar Equipo</h2>
       <form id="form-cobro" onsubmit="enviarCobroTaller(event)">
         <input type="hidden" id="cob-id">
@@ -237,6 +246,13 @@
   <!-- Notificación Rápida -->
   <div id="toast-notificacion" class="toast">¡Guardado con éxito!</div>
 
-  <script src="app.js"></script>
+  <!-- BUSTER DE CACHÉ PARA EVITAR ERRORES -->
+  <script src="app.js?v=4"></script>
+  <script>
+    function cambiarCatCaja() {
+      let tipo = document.getElementById('caja-tipo').value;
+      if (tipo === "Ingreso") document.getElementById('caja-categoria').value = "Ajuste Capital";
+    }
+  </script>
 </body>
 </html>
