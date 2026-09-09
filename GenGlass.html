@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GenGlass - Presupuestos</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
+        .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #333; }
+        label { display: block; margin-top: 15px; font-weight: bold; color: #555; }
+        select, input { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        .hidden { display: none; }
+        button { width: 100%; padding: 12px; margin-top: 25px; background-color: #007bff; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        .resultado { margin-top: 20px; padding: 15px; background-color: #e9ecef; border-radius: 5px; text-align: center; font-size: 20px; font-weight: bold; color: #28a745; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>GenGlass 🟦</h2>
+    
+    <label for="tipoTrabajo">Tipo de Trabajo</label>
+    <select id="tipoTrabajo" onchange="actualizarFormulario()">
+        <option value="solo_vidrio">Solo Vidrio</option>
+        <option value="box_bano">Box de Baño (Incluye Perfilería)</option>
+        <option value="puerta_batiente">Puerta Batiente (Incluye Herrajes)</option>
+    </select>
+
+    <label for="formaVidrio" id="lblForma">Forma del Vidrio</label>
+    <select id="formaVidrio" onchange="actualizarFormulario()">
+        <option value="cuadrado">Rectangular / Cuadrado</option>
+        <option value="triangulo">Triángulo</option>
+        <option value="redondo">Redondo</option>
+    </select>
+
+    <!-- Medidas Rectángulo / Triángulo -->
+    <div id="medidasBaseAltura">
+        <label for="ancho">Ancho / Base (metros)</label>
+        <input type="number" id="ancho" step="0.01" placeholder="Ej: 1.50">
+        
+        <label for="alto">Alto (metros)</label>
+        <input type="number" id="alto" step="0.01" placeholder="Ej: 2.00">
+    </div>
+
+    <!-- Medidas Círculo -->
+    <div id="medidasRadio" class="hidden">
+        <label for="radio">Radio (metros)</label>
+        <input type="number" id="radio" step="0.01" placeholder="Ej: 0.50">
+    </div>
+
+    <button onclick="calcularPresupuesto()">Calcular Presupuesto</button>
+
+    <div class="resultado hidden" id="cajaResultado">
+        Total Estimado: <span id="montoTotal">0</span> Gs.
+    </div>
+</div>
+
+<script>
+    // Variables simuladas (Esto vendría de Google Sheets a través de google.script.run)
+    const precioVidrioM2 = 250000; // Costo + Tu Ganancia por m2
+    const precioKitBox = 350000;   // Kit aluminio box de baño
+    const precioKitBatiente = 280000; // Bisagras, cerradura, pivot
+
+    function actualizarFormulario() {
+        const tipoTrabajo = document.getElementById('tipoTrabajo').value;
+        const formaVidrio = document.getElementById('formaVidrio').value;
+        const formBaseAltura = document.getElementById('medidasBaseAltura');
+        const formRadio = document.getElementById('medidasRadio');
+        const selectForma = document.getElementById('formaVidrio');
+        const lblForma = document.getElementById('lblForma');
+
+        // Ocultar/Mostrar selector de forma según el trabajo (un box de baño siempre es rectangular)
+        if (tipoTrabajo === 'solo_vidrio') {
+            selectForma.style.display = 'block';
+            lblForma.style.display = 'block';
+        } else {
+            selectForma.value = 'cuadrado';
+            selectForma.style.display = 'none';
+            lblForma.style.display = 'none';
+        }
+
+        // Alternar campos de medidas
+        if (selectForma.value === 'redondo') {
+            formBaseAltura.classList.add('hidden');
+            formRadio.classList.remove('hidden');
+        } else {
+            formBaseAltura.classList.remove('hidden');
+            formRadio.classList.add('hidden');
+        }
+    }
+
+    function calcularPresupuesto() {
+        const tipoTrabajo = document.getElementById('tipoTrabajo').value;
+        const formaVidrio = document.getElementById('formaVidrio').value;
+        
+        let areaM2 = 0;
+
+        if (formaVidrio === 'redondo' && tipoTrabajo === 'solo_vidrio') {
+            const radio = parseFloat(document.getElementById('radio').value) || 0;
+            areaM2 = Math.PI * Math.pow(radio, 2);
+        } else {
+            const ancho = parseFloat(document.getElementById('ancho').value) || 0;
+            const alto = parseFloat(document.getElementById('alto').value) || 0;
+            
+            if (formaVidrio === 'triangulo' && tipoTrabajo === 'solo_vidrio') {
+                areaM2 = (ancho * alto) / 2;
+            } else {
+                areaM2 = ancho * alto; // Cuadrado o cualquier instalación completa
+            }
+        }
+
+        // Cálculo de costos
+        let costoTotal = areaM2 * precioVidrioM2;
+
+        if (tipoTrabajo === 'box_bano') {
+            costoTotal += precioKitBox;
+        } else if (tipoTrabajo === 'puerta_batiente') {
+            costoTotal += precioKitBatiente;
+        }
+
+        // Mostrar resultado
+        document.getElementById('cajaResultado').classList.remove('hidden');
+        document.getElementById('montoTotal').innerText = new Intl.NumberFormat('es-PY').format(Math.round(costoTotal));
+    }
+</script>
+
+</body>
+</html>
