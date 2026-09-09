@@ -132,14 +132,14 @@ function actualizarUI(datos) {
     });
   } else { ulCaja.innerHTML = "<li style='justify-content:center; color:#64748b;'>Sin movimientos.</li>"; }
 
-  // 7. ALERTAS DASHBOARD (Corregido con letras rojas y montos)
+  // 7. ALERTAS DASHBOARD (Corregidas para evitar descuadre y ajustar colores)
   let listaA = document.getElementById('lista-alertas'); listaA.innerHTML = ''; let hayAlertas = false;
   
   if (datos.stockBajo && datos.stockBajo.length > 0) { 
     datos.stockBajo.forEach(aviso => { 
       listaA.innerHTML += `<li>
-        <span style="color:var(--danger); font-weight:bold;"><i class="fas fa-box"></i> ${aviso}</span>
-        <span class="texto-rojo">Comprar</span>
+        <span style="color:var(--primary); font-weight:bold; flex: 1;"><i class="fas fa-box" style="color:#f59e0b;"></i> ${aviso}</span>
+        <span class="texto-rojo" style="white-space: nowrap;">Comprar</span>
       </li>`; 
       hayAlertas = true; 
     }); 
@@ -149,11 +149,12 @@ function actualizarUI(datos) {
     datos.alertasDeuda.forEach(deuda => {
       let estadoTxt = deuda.diasFaltantes < 0 ? "¡VENCIDO!" : (deuda.diasFaltantes === 0 ? "Vence HOY" : `En ${deuda.diasFaltantes} días`);
       listaA.innerHTML += `<li>
-        <span style="color:var(--danger); line-height: 1.4;">
-          <strong><i class="fas fa-file-invoice-dollar"></i> ${deuda.acreedor}</strong> <span style="font-size:0.85rem; color:var(--danger);">${deuda.cuotaInfo}</span><br>
+        <span style="color:var(--primary); line-height: 1.4; flex: 1; padding-right: 10px;">
+          <strong><i class="fas fa-file-invoice-dollar" style="color:#ef4444;"></i> ${deuda.acreedor}</strong><br>
+          <span style="font-size:0.85rem; color:#64748b;">${deuda.cuotaInfo}</span><br>
           <strong style="font-size:1.05rem;">${moneda.format(deuda.monto)}</strong>
         </span>
-        <span class="texto-rojo">${estadoTxt}</span>
+        <span class="texto-rojo" style="white-space: nowrap; font-weight: bold; text-align: right; display: flex; align-items: center;">${estadoTxt}</span>
       </li>`; 
       hayAlertas = true;
     });
@@ -169,7 +170,6 @@ function abrirEditInv(id, tipo, desc, costo, precio, stock, min) { document.getE
 function abrirEditTaller(id, cli, eq, falla, pres) { document.getElementById('et-id').value = id; document.getElementById('et-cliente').value = cli; document.getElementById('et-equipo').value = eq; document.getElementById('et-falla').value = falla; document.getElementById('et-presupuesto').value = pres; abrirModal('modal-edit-taller'); }
 function abrirEditDeuda(fila, acre, total, cuota, act, tot, dia) { document.getElementById('ed-fila').value = fila; document.getElementById('ed-acreedor').value = acre; document.getElementById('ed-total').value = total; document.getElementById('ed-monto').value = cuota; document.getElementById('ed-cuota-actual').value = act; document.getElementById('ed-cuota-total').value = tot; document.getElementById('ed-dia').value = dia; abrirModal('modal-edit-deuda'); }
 
-// ENVIOS
 function enviarVenta(e) { e.preventDefault(); let idProd = document.getElementById('ven-producto').value; let prodNombre = document.getElementById('ven-producto').options[document.getElementById('ven-producto').selectedIndex].text.split(" - ")[0]; procesarEnvio({accion: 'venta', idProducto: idProd, producto: prodNombre, cantidad: document.getElementById('ven-cantidad').value, total: document.getElementById('ven-total').value, metodo: document.getElementById('ven-metodo').value}, 'modal-venta', 'form-venta', 'btn-ven'); }
 function enviarCaja(e) { e.preventDefault(); procesarEnvio({accion: 'caja', tipo: document.getElementById('caja-tipo').value, categoria: document.getElementById('caja-categoria').value, concepto: document.getElementById('caja-concepto').value, monto: document.getElementById('caja-monto').value, metodo: document.getElementById('caja-metodo').value}, 'modal-caja', 'form-caja', 'btn-caja'); }
 function enviarTaller(e) { e.preventDefault(); procesarEnvio({accion: 'taller', cliente: document.getElementById('tal-cliente').value, equipo: document.getElementById('tal-equipo').value, falla: document.getElementById('tal-falla').value, presupuesto: document.getElementById('tal-presupuesto').value}, 'modal-taller', 'form-taller', 'btn-tal'); }
