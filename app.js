@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setInterval(obtenerDatosSilencioso, 12000);
 });
 
+// CONTROL DE NAVEGACIÓN Y MENÚ
 function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('menu-overlay').classList.toggle('mostrar'); }
 function cerrarMenu() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('menu-overlay').classList.remove('mostrar'); }
 
@@ -29,6 +30,18 @@ function mostrarToast(mensaje) {
   setTimeout(() => toast.classList.remove('mostrar'), 3000);
 }
 
+// CONTROL DEL ACORDEÓN DE ALERTAS
+function toggleAlertas() {
+  document.getElementById('contenedor-alertas').classList.toggle('abierto');
+  let icono = document.getElementById('icono-alertas');
+  if(icono.style.transform === 'rotate(180deg)') {
+      icono.style.transform = 'rotate(0deg)';
+  } else {
+      icono.style.transform = 'rotate(180deg)';
+  }
+}
+
+// MOTOR DE DATOS
 function obtenerDatosAPI() {
   fetch(URL_APPS_SCRIPT).then(r => r.json()).then(datos => {
     localStorage.setItem("totalNote_datos", JSON.stringify(datos));
@@ -132,8 +145,10 @@ function actualizarUI(datos) {
     });
   } else { ulCaja.innerHTML = "<li style='justify-content:center; color:#64748b;'>Sin movimientos.</li>"; }
 
-  // 7. ALERTAS DASHBOARD (Corregidas para evitar descuadre y ajustar colores)
-  let listaA = document.getElementById('lista-alertas'); listaA.innerHTML = ''; let hayAlertas = false;
+  // 7. ALERTAS DASHBOARD (Plegable con contador dinámico)
+  let listaA = document.getElementById('lista-alertas'); 
+  listaA.innerHTML = ''; 
+  let numAlertas = 0;
   
   if (datos.stockBajo && datos.stockBajo.length > 0) { 
     datos.stockBajo.forEach(aviso => { 
@@ -141,7 +156,7 @@ function actualizarUI(datos) {
         <span style="color:var(--primary); font-weight:bold; flex: 1;"><i class="fas fa-box" style="color:#f59e0b;"></i> ${aviso}</span>
         <span class="texto-rojo" style="white-space: nowrap;">Comprar</span>
       </li>`; 
-      hayAlertas = true; 
+      numAlertas++;
     }); 
   }
   
@@ -156,11 +171,20 @@ function actualizarUI(datos) {
         </span>
         <span class="texto-rojo" style="white-space: nowrap; font-weight: bold; text-align: right; display: flex; align-items: center;">${estadoTxt}</span>
       </li>`; 
-      hayAlertas = true;
+      numAlertas++;
     });
   }
-  
-  if (!hayAlertas) { listaA.innerHTML = '<li style="color:#10b981; font-weight:bold; justify-content:center;"><i class="fas fa-check-circle"></i> Todo en orden.</li>'; }
+
+  // Actualizar el numerito (Badge) del botón desplegable
+  let badge = document.getElementById('badge-alertas');
+  if (numAlertas === 0) { 
+    listaA.innerHTML = '<li style="color:#10b981; font-weight:bold; justify-content:center; border:none;"><i class="fas fa-check-circle"></i> Todo en orden.</li>'; 
+    badge.innerHTML = '<i class="fas fa-check"></i>';
+    badge.style.background = 'var(--success)';
+  } else {
+    badge.innerText = numAlertas;
+    badge.style.background = 'var(--danger)';
+  }
 }
 
 function autocompletarPrecio() { let id = document.getElementById('ven-producto').value; let prod = stockDisponible.find(p => p.id == id); if (prod) document.getElementById('ven-total').value = prod.precio * (document.getElementById('ven-cantidad').value || 1); }
