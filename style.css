@@ -3,7 +3,7 @@
   --danger: #ef4444; --success: #10b981; --warning: #f59e0b;
 }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: var(--bg-color); margin: 0; padding: 0; color: #334155; }
-* { box-sizing: border-box; } /* Regla de oro para evitar descuadres */
+* { box-sizing: border-box; }
 
 .sidebar { position: fixed; top: 0; left: -280px; width: 280px; height: 100%; background: var(--primary); color: white; z-index: 10000; transition: 0.3s ease; box-shadow: 2px 0 10px rgba(0,0,0,0.5); display: flex; flex-direction: column; }
 .sidebar.open { left: 0; }
@@ -47,8 +47,13 @@ main { padding: 0 15px 40px 15px; max-width: 600px; margin: 0 auto; overflow-x: 
 .card-info p { margin: 0; font-size: 1.3rem; font-weight: bold; color: var(--primary); }
 .ver-mas { font-size: 0.8rem; color: var(--accent); margin-top: 10px; border-top: 1px solid #f1f5f9; padding-top: 10px; font-weight: bold;}
 
-.alertas-section { background: white; padding: 20px; border-radius: 16px; margin-bottom: 20px; border-left: 4px solid var(--warning); }
-.alertas-section h3 { margin: 0 0 15px 0; font-size: 1.1rem;}
+/* ALERTAS DESPLEGABLES (ACORDEÓN) */
+.alertas-section { background: white; border-radius: 16px; margin-bottom: 20px; border-left: 4px solid var(--warning); box-shadow: 0 4px 6px rgba(0,0,0,0.02); overflow: hidden; }
+.alertas-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; cursor: pointer; user-select: none; }
+.alertas-header h3 { margin: 0; font-size: 1.1rem; color: var(--primary); }
+.badge-notificacion { background: var(--danger); color: white; border-radius: 50%; min-width: 24px; height: 24px; display: inline-flex; justify-content: center; align-items: center; font-size: 0.8rem; font-weight: bold; padding: 0 6px;}
+.alertas-contenido { display: none; padding: 0 20px 20px 20px; border-top: 1px solid #f1f5f9; }
+.alertas-contenido.abierto { display: block; animation: fadeIn 0.3s ease; }
 
 .lista-visualizacion { list-style: none; padding: 0; margin: 0; background: white; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); overflow: hidden;}
 .lista-visualizacion li { padding: 15px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; gap: 10px;}
@@ -69,7 +74,6 @@ main { padding: 0 15px 40px 15px; max-width: 600px; margin: 0 auto; overflow-x: 
 .close { position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; color: #94a3b8; width: 30px; height: 30px; text-align: center; border-radius: 50%; background: #f1f5f9; line-height: 30px;}
 .modal h2 { margin: 0 0 10px 0; color: var(--primary); font-size: 1.3rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px;}
 
-/* SOLUCIÓN AL DESCUADRE: GRILLAS MATEMÁTICAS EXACTAS */
 .grid-1-1 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
 .grid-1-2 { display: grid; grid-template-columns: 80px 1fr; gap: 10px; width: 100%; }
 .grid-1-1 > div, .grid-1-2 > div { display: flex; flex-direction: column; width: 100%; }
@@ -86,3 +90,4 @@ main { padding: 0 15px 40px 15px; max-width: 600px; margin: 0 auto; overflow-x: 
 
 .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--success); color: white; padding: 12px 25px; border-radius: 30px; font-weight: bold; font-size: 0.95rem; box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4); z-index: 10000; opacity: 0; transition: 0.3s ease; pointer-events: none; }
 .toast.mostrar { transform: translateX(-50%) translateY(0); opacity: 1; }
+.texto-rojo { color: var(--danger); font-weight: bold; }
