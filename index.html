@@ -66,10 +66,20 @@
         <div id="grafico-gastos" style="margin-top: 15px;"></div>
       </div>
 
+      <!-- NUEVA SECCIÓN DE ALERTAS PLEGABLE -->
       <div class="alertas-section">
-        <h3><i class="fas fa-bell"></i> Alertas y Vencimientos</h3>
-        <ul id="lista-alertas" class="lista-visualizacion"></ul>
+        <div class="alertas-header" onclick="toggleAlertas()">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <span id="badge-alertas" class="badge-notificacion">0</span>
+            <h3>Alertas y Vencimientos</h3>
+          </div>
+          <i class="fas fa-chevron-down" id="icono-alertas" style="transition:0.3s; color:#94a3b8;"></i>
+        </div>
+        <div id="contenedor-alertas" class="alertas-contenido">
+          <ul id="lista-alertas" class="lista-visualizacion" style="box-shadow:none; border-radius:0;"></ul>
+        </div>
       </div>
+
     </section>
 
     <section id="vista-inventario" class="vista">
@@ -113,12 +123,7 @@
       <form id="form-venta" onsubmit="enviarVenta(event)">
         <label class="form-label">Producto a Vender</label>
         <select id="ven-producto" required onchange="autocompletarPrecio()"><option value="">Cargando...</option></select>
-        
-        <div class="grid-1-2">
-          <div><label class="form-label">Cant.</label><input type="number" id="ven-cantidad" required value="1"></div>
-          <div><label class="form-label">Precio Final</label><input type="number" id="ven-total" required></div>
-        </div>
-
+        <div class="grid-1-2"><div><label class="form-label">Cant.</label><input type="number" id="ven-cantidad" required value="1"></div><div><label class="form-label">Precio Final</label><input type="number" id="ven-total" required></div></div>
         <label class="form-label">Método</label>
         <select id="ven-metodo" required><option value="Efectivo">Efectivo</option><option value="Transferencia">Transferencia</option></select>
         <button type="submit" class="btn-submit" id="btn-ven">Confirmar Venta</button>
@@ -131,12 +136,7 @@
         <label class="form-label">Descripción</label><input type="text" id="inv-desc" required>
         <label class="form-label">Costo (Gs.)</label><input type="number" id="inv-costo" required>
         <label class="form-label">Precio de Venta (Gs.)</label><input type="number" id="inv-precio" required>
-        
-        <div class="grid-1-1">
-          <div><label class="form-label">Cantidad</label><input type="number" id="inv-stock" required></div>
-          <div><label class="form-label">Aviso Mín.</label><input type="number" id="inv-min" required value="0"></div>
-        </div>
-
+        <div class="grid-1-1"><div><label class="form-label">Cantidad</label><input type="number" id="inv-stock" required></div><div><label class="form-label">Aviso Mín.</label><input type="number" id="inv-min" required value="0"></div></div>
         <label style="font-size: 0.85rem; font-weight:bold; margin-top:10px; display:flex; align-items:center; gap:8px;"><input type="checkbox" id="inv-gasto" style="width:auto;"> Restar costo de la Caja</label>
         <button type="submit" class="btn-submit" id="btn-inv">Agregar al Stock</button>
       </form>
@@ -167,17 +167,11 @@
       <form id="form-deuda" onsubmit="enviarDeuda(event)">
         <label class="form-label">Categoría</label><select id="deu-categoria" required><option value="Servicio">Servicio (Luz/Internet)</option><option value="Préstamo">Préstamo</option><option value="Tarjeta">Tarjeta de Crédito</option></select>
         <label class="form-label">Acreedor (Ej. ANDE, Itaú)</label><input type="text" id="deu-acreedor" required>
-        
         <div style="display:flex; flex-direction:column; gap:8px; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; margin-top:5px;">
            <label class="form-label" style="color:#3b82f6;">Si es préstamo o tarjeta (Opcional):</label>
            <label class="form-label" style="margin-top:0;">Deuda Total a Pagar</label><input type="number" id="deu-monto-total">
-           
-           <div class="grid-1-1">
-             <div><label class="form-label">Cuota N°</label><input type="number" id="deu-cuota-actual"></div>
-             <div><label class="form-label">De cuantas?</label><input type="number" id="deu-cuota-total"></div>
-           </div>
+           <div class="grid-1-1"><div><label class="form-label">Cuota N°</label><input type="number" id="deu-cuota-actual"></div><div><label class="form-label">De cuantas?</label><input type="number" id="deu-cuota-total"></div></div>
         </div>
-        
         <label class="form-label">Monto Mensual (Vacío si varía)</label><input type="number" id="deu-monto-cuota">
         <label class="form-label">Día de vencimiento (1 al 31)</label><input type="number" id="deu-dia" min="1" max="31" required>
         <button type="submit" class="btn-submit" id="btn-deu">Guardar Registro</button>
@@ -212,12 +206,7 @@
         <label class="form-label">Descripción</label><input type="text" id="ei-desc" required>
         <label class="form-label">Costo (Gs.)</label><input type="number" id="ei-costo" required>
         <label class="form-label">Precio (Gs.)</label><input type="number" id="ei-precio" required>
-        
-        <div class="grid-1-1">
-          <div><label class="form-label">Stock</label><input type="number" id="ei-stock" required></div>
-          <div><label class="form-label">Aviso Mín.</label><input type="number" id="ei-min" required value="0"></div>
-        </div>
-        
+        <div class="grid-1-1"><div><label class="form-label">Stock</label><input type="number" id="ei-stock" required></div><div><label class="form-label">Aviso Mín.</label><input type="number" id="ei-min" required value="0"></div></div>
         <button type="submit" class="btn-submit" id="btn-ei">Guardar Cambios</button>
       </form>
   </div></div>
@@ -238,12 +227,7 @@
         <input type="hidden" id="ed-fila">
         <label class="form-label">Acreedor</label><input type="text" id="ed-acreedor" required>
         <label class="form-label">Deuda Total</label><input type="number" id="ed-total">
-        
-        <div class="grid-1-1">
-          <div><label class="form-label">Cuota Actual</label><input type="number" id="ed-cuota-actual"></div>
-          <div><label class="form-label">Totales</label><input type="number" id="ed-cuota-total"></div>
-        </div>
-        
+        <div class="grid-1-1"><div><label class="form-label">Cuota Actual</label><input type="number" id="ed-cuota-actual"></div><div><label class="form-label">Totales</label><input type="number" id="ed-cuota-total"></div></div>
         <label class="form-label">Monto Mensual</label><input type="number" id="ed-monto">
         <label class="form-label">Día Vencimiento</label><input type="number" id="ed-dia" min="1" max="31" required>
         <button type="submit" class="btn-submit" id="btn-ed">Guardar Cambios</button>
