@@ -8,7 +8,6 @@ document.addEventListener("DOMContentLoaded", () => {
   setInterval(obtenerDatosSilencioso, 12000);
 });
 
-// CONTROL DE NAVEGACIÓN Y MENÚ
 function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('menu-overlay').classList.toggle('mostrar'); }
 function cerrarMenu() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('menu-overlay').classList.remove('mostrar'); }
 
@@ -30,18 +29,12 @@ function mostrarToast(mensaje) {
   setTimeout(() => toast.classList.remove('mostrar'), 3000);
 }
 
-// CONTROL DEL ACORDEÓN DE ALERTAS
 function toggleAlertas() {
   document.getElementById('contenedor-alertas').classList.toggle('abierto');
   let icono = document.getElementById('icono-alertas');
-  if(icono.style.transform === 'rotate(180deg)') {
-      icono.style.transform = 'rotate(0deg)';
-  } else {
-      icono.style.transform = 'rotate(180deg)';
-  }
+  icono.style.transform = icono.style.transform === 'rotate(180deg)' ? 'rotate(0deg)' : 'rotate(180deg)';
 }
 
-// MOTOR DE DATOS
 function obtenerDatosAPI() {
   fetch(URL_APPS_SCRIPT).then(r => r.json()).then(datos => {
     localStorage.setItem("totalNote_datos", JSON.stringify(datos));
@@ -75,7 +68,6 @@ function actualizarUI(datos) {
   document.getElementById('val-capital').innerText = moneda.format(datos.capitalInventario || 0);
   document.getElementById('val-taller').innerText = moneda.format(datos.proyeccionTaller || 0);
 
-  // Gráfico Gastos
   let contGastos = document.getElementById('grafico-gastos'); contGastos.innerHTML = '';
   if (datos.gastosDashboard && datos.gastosDashboard.length > 0) {
     let max = datos.gastosDashboard[0].total;
@@ -85,13 +77,11 @@ function actualizarUI(datos) {
     });
   } else { contGastos.innerHTML = '<p style="font-size:0.9rem; color:#64748b;">No hay gastos registrados este mes.</p>'; }
 
-  // 2. Selectores de Venta
   stockDisponible = datos.productosStock || [];
   let selectVenta = document.getElementById('ven-producto');
   selectVenta.innerHTML = '<option value="">Selecciona qué vas a vender...</option>';
   stockDisponible.forEach(prod => { selectVenta.innerHTML += `<option value="${prod.id}">${prod.nombre} - ${moneda.format(prod.precio)}</option>`; });
 
-  // 3. Vista INVENTARIO
   let ulStock = document.getElementById('ul-stock'); ulStock.innerHTML = '';
   if (datos.listaInventario && datos.listaInventario.length > 0) {
     datos.listaInventario.forEach(item => {
@@ -102,7 +92,6 @@ function actualizarUI(datos) {
     });
   } else { ulStock.innerHTML = "<li style='justify-content:center; color:#64748b;'>Inventario vacío.</li>"; }
 
-  // 4. Vista TALLER
   let ulTaller = document.getElementById('ul-taller'); ulTaller.innerHTML = '';
   if (datos.listaTaller && datos.listaTaller.length > 0) {
     datos.listaTaller.forEach(item => {
@@ -116,7 +105,6 @@ function actualizarUI(datos) {
     });
   } else { ulTaller.innerHTML = "<li style='justify-content:center; color:#64748b;'>No hay equipos pendientes.</li>"; }
 
-  // 5. Vista DEUDAS
   let ulDeudas = document.getElementById('ul-deudas'); ulDeudas.innerHTML = '';
   if (datos.listaDeudas && datos.listaDeudas.length > 0) {
     datos.listaDeudas.forEach(item => {
@@ -132,23 +120,19 @@ function actualizarUI(datos) {
     });
   } else { ulDeudas.innerHTML = "<li style='justify-content:center; color:#64748b;'>No hay deudas activas.</li>"; }
 
-  // 6. Vista CAJA
   let ulCaja = document.getElementById('ul-caja'); ulCaja.innerHTML = '';
   if (datos.listaCaja && datos.listaCaja.length > 0) {
     datos.listaCaja.forEach(tx => {
-      let f = new Date(tx.fecha).toLocaleDateString();
       let color = tx.tipo === "Ingreso" ? "color:var(--success);" : "color:var(--danger);";
       ulCaja.innerHTML += `<li>
-        <div class="lista-texto"><strong>${tx.concepto}</strong><br><span>${tx.categoria} | ${f}</span></div>
+        <div class="lista-texto"><strong>${tx.concepto}</strong><br><span>${tx.categoria} | ${tx.fecha}</span></div>
         <strong style="${color}">${tx.tipo === "Egreso" ? "-" : "+"} ${moneda.format(tx.monto)}</strong>
       </li>`;
     });
   } else { ulCaja.innerHTML = "<li style='justify-content:center; color:#64748b;'>Sin movimientos.</li>"; }
 
-  // 7. ALERTAS DASHBOARD (Plegable con contador dinámico)
-  let listaA = document.getElementById('lista-alertas'); 
-  listaA.innerHTML = ''; 
-  let numAlertas = 0;
+  // 7. ALERTAS DASHBOARD
+  let listaA = document.getElementById('lista-alertas'); listaA.innerHTML = ''; let numAlertas = 0;
   
   if (datos.stockBajo && datos.stockBajo.length > 0) { 
     datos.stockBajo.forEach(aviso => { 
@@ -175,7 +159,6 @@ function actualizarUI(datos) {
     });
   }
 
-  // Actualizar el numerito (Badge) del botón desplegable
   let badge = document.getElementById('badge-alertas');
   if (numAlertas === 0) { 
     listaA.innerHTML = '<li style="color:#10b981; font-weight:bold; justify-content:center; border:none;"><i class="fas fa-check-circle"></i> Todo en orden.</li>'; 
@@ -207,14 +190,8 @@ function enviarEditDeuda(e) { e.preventDefault(); procesarEnvio({accion: 'editar
 
 function procesarEnvio(datos, idModal, idForm, idBtn) {
   let btn = document.getElementById(idBtn); let textoOrig = btn.innerText; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>...'; btn.disabled = true;
-  
   fetch(URL_APPS_SCRIPT, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(datos) })
   .then(r => r.json()).then(res => {
-    if (res.exito) { 
-      cerrarModal(idModal); 
-      document.getElementById(idForm).reset(); 
-      mostrarToast("¡Guardado correctamente!");
-      obtenerDatosSilencioso(); 
-    } else alert("Error: " + res.error);
+    if (res.exito) { cerrarModal(idModal); document.getElementById(idForm).reset(); mostrarToast("¡Guardado correctamente!"); obtenerDatosSilencioso(); } else alert("Error: " + res.error);
   }).catch(e => alert("Error de red.")).finally(() => { btn.innerText = textoOrig; btn.disabled = false; });
 }
