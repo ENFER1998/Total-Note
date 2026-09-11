@@ -105,21 +105,36 @@ function actualizarUI(datos) {
     });
   } else { ulTaller.innerHTML = "<li style='justify-content:center; color:#64748b;'>No hay equipos pendientes.</li>"; }
 
+  // 5. Vista DEUDAS (Con estado Al Día)
   let ulDeudas = document.getElementById('ul-deudas'); ulDeudas.innerHTML = '';
   if (datos.listaDeudas && datos.listaDeudas.length > 0) {
     datos.listaDeudas.forEach(item => {
       let colorVenc = item.venceEn <= 5 ? "color:var(--danger);" : "color:var(--primary);";
       let textoVenc = item.venceEn < 0 ? "¡Vencido!" : (item.venceEn === 0 ? "Vence HOY" : `En ${item.venceEn} d.`);
+      
+      let botonAccion = item.pagadoEsteMes
+        ? `<button style="background:var(--success); color:white; border:none; padding:8px 10px; border-radius:8px; font-weight:bold; font-size:0.85rem;" disabled><i class="fas fa-check"></i> Al día</button>`
+        : `<button class="btn-action-pay" onclick="abrirPagoDeuda(${item.fila}, '${limpiarTexto(item.acreedor)}', ${item.monto})">Pagar</button>`;
+      
+      let detalleEstado = item.pagadoEsteMes 
+        ? '<span style="color:var(--success); font-weight:bold;"><i class="fas fa-check-circle"></i> Pagado este mes</span>'
+        : `<span>${item.cuotaInfo} - ${textoVenc}</span>`;
+
       ulDeudas.innerHTML += `<li>
-        <div class="lista-texto"><strong style="${colorVenc}">${item.acreedor}</strong><br><span>${item.cuotaInfo} - ${textoVenc}</span><br><strong>${moneda.format(item.monto)}</strong></div>
+        <div class="lista-texto">
+          <strong style="${item.pagadoEsteMes ? 'color:var(--primary);' : colorVenc}">${item.acreedor}</strong><br>
+          ${detalleEstado}<br>
+          <strong>${moneda.format(item.monto)}</strong>
+        </div>
         <div style="display:flex; flex-direction:column; gap:5px;">
-          <button class="btn-action-pay" onclick="abrirPagoDeuda(${item.fila}, '${limpiarTexto(item.acreedor)}', ${item.monto})">Pagar</button>
+          ${botonAccion}
           <button class="btn-edit" onclick="abrirEditDeuda(${item.fila}, '${limpiarTexto(item.acreedor)}', '${item.montoTotal}', '${item.montoCuota}', '${item.cuotaActual}', '${item.cuotasTotales}', '${item.diaVenc}')"><i class="fas fa-pen"></i> Editar</button>
         </div>
       </li>`;
     });
   } else { ulDeudas.innerHTML = "<li style='justify-content:center; color:#64748b;'>No hay deudas activas.</li>"; }
 
+  // 6. Vista CAJA
   let ulCaja = document.getElementById('ul-caja'); ulCaja.innerHTML = '';
   if (datos.listaCaja && datos.listaCaja.length > 0) {
     datos.listaCaja.forEach(tx => {
@@ -131,7 +146,7 @@ function actualizarUI(datos) {
     });
   } else { ulCaja.innerHTML = "<li style='justify-content:center; color:#64748b;'>Sin movimientos.</li>"; }
 
-  // 7. ALERTAS DASHBOARD
+  // 7. ALERTAS DASHBOARD (Oculta las ya pagadas)
   let listaA = document.getElementById('lista-alertas'); listaA.innerHTML = ''; let numAlertas = 0;
   
   if (datos.stockBajo && datos.stockBajo.length > 0) { 
@@ -192,6 +207,11 @@ function procesarEnvio(datos, idModal, idForm, idBtn) {
   let btn = document.getElementById(idBtn); let textoOrig = btn.innerText; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>...'; btn.disabled = true;
   fetch(URL_APPS_SCRIPT, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(datos) })
   .then(r => r.json()).then(res => {
-    if (res.exito) { cerrarModal(idModal); document.getElementById(idForm).reset(); mostrarToast("¡Guardado correctamente!"); obtenerDatosSilencioso(); } else alert("Error: " + res.error);
+    if (res.exito) { 
+      cerrarModal(idModal); 
+      document.getElementById(idForm).reset(); 
+      mostrarToast("¡Guardado correctamente!"); 
+      obtenerDatosSilencioso(); 
+    } else alert("Error: " + res.error);
   }).catch(e => alert("Error de red.")).finally(() => { btn.innerText = textoOrig; btn.disabled = false; });
 }
