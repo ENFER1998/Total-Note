@@ -57,7 +57,6 @@ function actualizarUI(datos) {
   document.getElementById('main-content').style.display = 'block';
   let moneda = new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG' });
 
-  // Memoria local para forzar el ocultamiento de deudas recién pagadas
   let pagosLocales = JSON.parse(localStorage.getItem("pagos_locales") || "{}");
   let fecha = new Date();
   let mesActual = fecha.getFullYear() + "-" + (fecha.getMonth() + 1);
@@ -74,48 +73,60 @@ function actualizarUI(datos) {
   document.getElementById('val-taller').innerText = moneda.format(datos.proyeccionTaller || 0);
 
   // ========================================================
-  // DASHBOARD - GASTOS DEL MES (DOBLE AGRUPACIÓN: Categoría -> Conceptos)
+  // DASHBOARD - GASTOS DEL MES (TOTAL DESPLEGABLE)
   // ========================================================
-  let contGastos = document.getElementById('grafico-gastos'); contGastos.innerHTML = '';
+  let contGastos = document.getElementById('grafico-gastos'); 
+  let cardGastos = contGastos.parentElement;
+  
+  // Limpiamos el diseño estático original desde JavaScript para hacerlo un gran botón desplegable
+  let h3Original = cardGastos.querySelector('h3');
+  if (h3Original) h3Original.style.display = 'none';
+  cardGastos.style.padding = '0'; // Quitamos los bordes internos
+  contGastos.style.marginTop = '0'; 
+
   let egresosMes = (datos.listaCaja || []).filter(mov => mov.tipo === "Egreso");
+  let totalGastosMes = egresosMes.reduce((acc, mov) => acc + (parseFloat(mov.monto) || 0), 0);
+
+  // HTML Principal de la Tarjeta Desplegable
+  let htmlGastos = `
+    <details style="width: 100%;">
+      <summary style="list-style: none; cursor: pointer; padding: 15px; display: flex; justify-content: space-between; align-items: center; outline: none; background: white;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <i class="fas fa-chart-pie" style="color: var(--primary); font-size: 1.2rem;"></i>
+          <h3 style="margin: 0; color: var(--primary); font-size: 1.1rem;">Gastos del Mes</h3>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <strong style="color: var(--danger); font-size: 1.15rem;">${moneda.format(totalGastosMes)}</strong>
+          <i class="fas fa-chevron-down" style="color: #94a3b8;"></i>
+        </div>
+      </summary>
+      <div style="padding: 15px; border-top: 1px solid #e2e8f0; background: #f8fafc;">
+  `;
 
   if (egresosMes.length > 0) {
-    // 1. Agrupar Egresos: Primero por Categoría, y dentro por Conceptos sumados
     let gastosAgrup = egresosMes.reduce((acc, mov) => {
       let cat = mov.categoria || "Otros";
       let conc = mov.concepto || "Varios";
-      
-      // Si la categoría no existe, la creamos
       if (!acc[cat]) { acc[cat] = { total: 0, conceptos: {} }; }
-      
-      // Sumamos al total de la Categoría
       acc[cat].total += parseFloat(mov.monto) || 0;
-      
-      // Si el concepto no existe dentro de esta categoría, lo creamos
       if (!acc[cat].conceptos[conc]) { acc[cat].conceptos[conc] = 0; }
-      
-      // Sumamos al total de ese Concepto en específico
       acc[cat].conceptos[conc] += parseFloat(mov.monto) || 0;
-      
       return acc;
     }, {});
 
-    // 2. Convertir el objeto a un Array ordenado de mayor a menor gasto
     let arrayGastos = Object.keys(gastosAgrup).map(cat => ({
       categoria: cat, 
       total: gastosAgrup[cat].total, 
       conceptos: Object.keys(gastosAgrup[cat].conceptos).map(c => ({
-        nombre: c, 
-        monto: gastosAgrup[cat].conceptos[c]
-      })).sort((a, b) => b.monto - a.monto) // Ordenar conceptos internamente
-    })).sort((a, b) => b.total - a.total); // Ordenar categorías
+        nombre: c, monto: gastosAgrup[cat].conceptos[c]
+      })).sort((a, b) => b.monto - a.monto)
+    })).sort((a, b) => b.total - a.total);
 
     let max = arrayGastos[0].total;
 
-    // 3. Imprimir el HTML con los detalles desplegables
     arrayGastos.forEach(g => {
       let pct = (g.total / max) * 100;
-      contGastos.innerHTML += `
+      htmlGastos += `
       <details style="margin-bottom:12px; background:white; border-radius:8px; border:1px solid #e2e8f0; overflow:hidden;">
         <summary style="list-style:none; cursor:pointer; padding:12px;">
           <div style="display:flex; justify-content:space-between; font-size:0.9rem; font-weight:bold; color:var(--primary);">
@@ -126,7 +137,7 @@ function actualizarUI(datos) {
             <div style="background:var(--danger); height:100%; border-radius:5px; width:${pct}%;"></div>
           </div>
         </summary>
-        <div style="padding: 10px 15px; border-top: 1px solid #f1f5f9; background:#f8fafc;">
+        <div style="padding: 10px 15px; border-top: 1px solid #f1f5f9; background:#ffffff;">
           <ul style="list-style:none; padding:0; margin:0; font-size:0.8rem;">
             ${g.conceptos.map(c => `
               <li style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed #cbd5e1;">
@@ -139,8 +150,13 @@ function actualizarUI(datos) {
       </details>`;
     });
   } else { 
-    contGastos.innerHTML = '<p style="font-size:0.9rem; color:#64748b; padding:5px;">No hay gastos registrados este mes.</p>'; 
+    htmlGastos += '<p style="font-size:0.9rem; color:#64748b; padding:5px; margin:0;">No hay gastos registrados este mes.</p>'; 
   }
+
+  // Cierre de la Tarjeta Desplegable
+  htmlGastos += `</div></details>`;
+  contGastos.innerHTML = htmlGastos;
+
 
   // Stock e Inventario
   stockDisponible = datos.productosStock || [];
@@ -172,13 +188,12 @@ function actualizarUI(datos) {
     });
   } else { ulTaller.innerHTML = "<li style='justify-content:center; color:#64748b;'>No hay equipos pendientes.</li>"; }
 
-  // 5. Vista DEUDAS (Implementa Memoria Local)
+  // 5. Vista DEUDAS
   let ulDeudas = document.getElementById('ul-deudas'); ulDeudas.innerHTML = '';
   if (datos.listaDeudas && datos.listaDeudas.length > 0) {
     datos.listaDeudas.forEach(item => {
       let pagadoLocal = pagosLocales[item.acreedor + "_" + mesActual];
       let estaPagado = item.pagadoEsteMes || pagadoLocal;
-
       let colorVenc = item.venceEn <= 5 ? "color:var(--danger);" : "color:var(--primary);";
       let textoVenc = item.venceEn < 0 ? "¡Vencido!" : (item.venceEn === 0 ? "Vence HOY" : `En ${item.venceEn} d.`);
       
@@ -204,21 +219,19 @@ function actualizarUI(datos) {
     });
   } else { ulDeudas.innerHTML = "<li style='justify-content:center; color:#64748b;'>No hay deudas activas.</li>"; }
 
-  // 6. Vista CAJA (Agrupado por categoría para Historial)
+  // 6. Vista CAJA
   let ulCaja = document.getElementById('ul-caja'); ulCaja.innerHTML = '';
   if (datos.listaCaja && datos.listaCaja.length > 0) {
     const egresos = datos.listaCaja.filter(mov => mov.tipo === "Egreso");
     const ingresos = datos.listaCaja.filter(mov => mov.tipo === "Ingreso");
-
     const gastosAgrupados = egresos.reduce((acc, mov) => {
       if (!acc[mov.categoria]) acc[mov.categoria] = { total: 0, detalles: [] };
       acc[mov.categoria].total += parseFloat(mov.monto) || 0;
-      acc[mov.categoria].detalles.push(mov); // Guarda transacciones individuales para historial
+      acc[mov.categoria].detalles.push(mov);
       return acc;
     }, {});
 
     let htmlCaja = "";
-
     if (Object.keys(gastosAgrupados).length > 0) {
       htmlCaja += `<h4 style="color:var(--danger); margin: 15px 0 10px 0;"><i class="fas fa-arrow-down"></i> Egresos Agrupados</h4>`;
       for (const categoria in gastosAgrupados) {
@@ -257,7 +270,7 @@ function actualizarUI(datos) {
   } else { ulCaja.innerHTML = "<li style='justify-content:center; color:#64748b;'>Sin movimientos.</li>"; }
 
   // ========================================================
-  // 7. ALERTAS DASHBOARD (Oculta usando Memoria Local)
+  // 7. ALERTAS DASHBOARD 
   // ========================================================
   let listaA = document.getElementById('lista-alertas'); listaA.innerHTML = ''; let numAlertas = 0;
   
@@ -277,9 +290,8 @@ function actualizarUI(datos) {
       let deudaEnListaPrincipal = (datos.listaDeudas || []).find(d => d.acreedor === deuda.acreedor);
       
       if (deuda.pagadoEsteMes || (deudaEnListaPrincipal && deudaEnListaPrincipal.pagadoEsteMes) || pagadoLocal) {
-        return; // Salta esta alerta, desaparece al instante de la campanita
+        return; 
       }
-
       let estadoTxt = deuda.diasFaltantes < 0 ? "¡VENCIDO!" : (deuda.diasFaltantes === 0 ? "Vence HOY" : `En ${deuda.diasFaltantes} días`);
       listaA.innerHTML += `<li>
         <span style="color:var(--primary); line-height: 1.4; flex: 1; padding-right: 10px;">
