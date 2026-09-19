@@ -134,19 +134,78 @@ function actualizarUI(datos) {
     });
   } else { ulDeudas.innerHTML = "<li style='justify-content:center; color:#64748b;'>No hay deudas activas.</li>"; }
 
-  // 6. Vista CAJA
+  // ========================================================
+  // 6. Vista CAJA (MODIFICADA: Agrupa Gastos / Muestra Ingresos)
+  // ========================================================
   let ulCaja = document.getElementById('ul-caja'); ulCaja.innerHTML = '';
   if (datos.listaCaja && datos.listaCaja.length > 0) {
-    datos.listaCaja.forEach(tx => {
-      let color = tx.tipo === "Ingreso" ? "color:var(--success);" : "color:var(--danger);";
-      ulCaja.innerHTML += `<li>
-        <div class="lista-texto"><strong>${tx.concepto}</strong><br><span>${tx.categoria} | ${tx.fecha}</span></div>
-        <strong style="${color}">${tx.tipo === "Egreso" ? "-" : "+"} ${moneda.format(tx.monto)}</strong>
-      </li>`;
-    });
-  } else { ulCaja.innerHTML = "<li style='justify-content:center; color:#64748b;'>Sin movimientos.</li>"; }
+    const egresos = datos.listaCaja.filter(mov => mov.tipo === "Egreso");
+    const ingresos = datos.listaCaja.filter(mov => mov.tipo === "Ingreso");
 
-  // 7. ALERTAS DASHBOARD (Oculta las ya pagadas)
+    // Agrupar los Egresos (Gastos) por Categoría
+    const gastosAgrupados = egresos.reduce((acc, mov) => {
+      if (!acc[mov.categoria]) {
+        acc[mov.categoria] = { total: 0, detalles: [] };
+      }
+      acc[mov.categoria].total += parseFloat(mov.monto) || 0;
+      acc[mov.categoria].detalles.push(mov);
+      return acc;
+    }, {});
+
+    let htmlCaja = "";
+
+    // Construir bloque de EGRESOS AGRUPADOS (Acordeón)
+    if (Object.keys(gastosAgrupados).length > 0) {
+      htmlCaja += `<h4 style="color:var(--danger); margin: 15px 0 10px 0;"><i class="fas fa-arrow-down"></i> Egresos Agrupados</h4>`;
+      
+      for (const categoria in gastosAgrupados) {
+        const grupo = gastosAgrupados[categoria];
+        htmlCaja += `
+          <details style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 8px;">
+            <summary style="padding: 12px; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; align-items: center; list-style: none;">
+              <span><i class="fas fa-folder-open" style="color:#94a3b8; margin-right:5px;"></i> ${categoria}</span>
+              <span style="color: var(--danger);">${moneda.format(grupo.total)}</span>
+            </summary>
+            <div style="padding: 10px 15px; border-top: 1px solid #e2e8f0; background: #ffffff; border-radius: 0 0 8px 8px;">
+              <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.85rem;">
+                ${grupo.detalles.map(d => `
+                  <li style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #cbd5e1;">
+                    <span>${d.concepto} <br><small style="color:#94a3b8;">${d.fecha} \vert{}${d.metodo}</small></span>
+                    <span style="font-weight:600; color:#475569;">${moneda.format(d.monto)}</span>
+                  </li>
+                `).join('')}
+              </ul>
+            </div>
+          </details>
+        `;
+      }
+    }
+
+    // Construir bloque de INGRESOS (Lista normal)
+    if (ingresos.length > 0) {
+      htmlCaja += `<h4 style="color:var(--success); margin: 20px 0 10px 0;"><i class="fas fa-arrow-up"></i> Ingresos</h4>`;
+      ingresos.forEach(ing => {
+        htmlCaja += `
+          <li style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="line-height:1.4;">
+              <strong style="color:var(--primary);">${ing.concepto}</strong><br>
+              <small style="color:#64748b;">${ing.categoria} | ${ing.fecha}</small>
+            </div>
+            <strong style="color:var(--success); font-size:1.05rem;">+ ${moneda.format(ing.monto)}</strong>
+          </li>
+        `;
+      });
+    }
+
+    ulCaja.innerHTML = htmlCaja;
+  } else { 
+    ulCaja.innerHTML = "<li style='justify-content:center; color:#64748b;'>Sin movimientos.</li>"; 
+  }
+
+
+  // ========================================================
+  // 7. ALERTAS DASHBOARD (MODIFICADO: Oculta si ya se pagó)
+  // ========================================================
   let listaA = document.getElementById('lista-alertas'); listaA.innerHTML = ''; let numAlertas = 0;
   
   if (datos.stockBajo && datos.stockBajo.length > 0) { 
@@ -161,6 +220,12 @@ function actualizarUI(datos) {
   
   if (datos.alertasDeuda && datos.alertasDeuda.length > 0) {
     datos.alertasDeuda.forEach(deuda => {
+      // MAGIA AQUÍ: Buscamos en la lista principal si esta deuda ya tiene el check de "pagadoEsteMes"
+      let deudaEnListaPrincipal = (datos.listaDeudas || []).find(d => d.acreedor === deuda.acreedor);
+      if (deuda.pagadoEsteMes || (deudaEnListaPrincipal && deudaEnListaPrincipal.pagadoEsteMes)) {
+        return; // Salta a la siguiente, no la dibuja en las alertas
+      }
+
       let estadoTxt = deuda.diasFaltantes < 0 ? "¡VENCIDO!" : (deuda.diasFaltantes === 0 ? "Vence HOY" : `En ${deuda.diasFaltantes} días`);
       listaA.innerHTML += `<li>
         <span style="color:var(--primary); line-height: 1.4; flex: 1; padding-right: 10px;">
@@ -211,7 +276,7 @@ function procesarEnvio(datos, idModal, idForm, idBtn) {
       cerrarModal(idModal); 
       document.getElementById(idForm).reset(); 
       mostrarToast("¡Guardado correctamente!"); 
-      obtenerDatosSilencioso(); 
+      obtenerDatosSilencioso(); // Esto recargará los datos y las alertas desaparecerán al instante.
     } else alert("Error: " + res.error);
   }).catch(e => alert("Error de red.")).finally(() => { btn.innerText = textoOrig; btn.disabled = false; });
 }
