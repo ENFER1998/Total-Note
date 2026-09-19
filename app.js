@@ -57,7 +57,12 @@ function actualizarUI(datos) {
   document.getElementById('main-content').style.display = 'block';
   let moneda = new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG' });
 
-  // 1. Dashboard
+  // Memoria local para forzar el ocultamiento de deudas recién pagadas
+  let pagosLocales = JSON.parse(localStorage.getItem("pagos_locales") || "{}");
+  let fecha = new Date();
+  let mesActual = fecha.getFullYear() + "-" + (fecha.getMonth() + 1);
+
+  // 1. Dashboard - Tarjetas de Resumen
   document.getElementById('val-ingresos').innerText = moneda.format(datos.ingresosMes || 0);
   document.getElementById('val-egresos').innerText = moneda.format(datos.egresosMes || 0);
   let neto = (datos.ingresosMes || 0) - (datos.egresosMes || 0);
@@ -68,15 +73,76 @@ function actualizarUI(datos) {
   document.getElementById('val-capital').innerText = moneda.format(datos.capitalInventario || 0);
   document.getElementById('val-taller').innerText = moneda.format(datos.proyeccionTaller || 0);
 
+  // ========================================================
+  // DASHBOARD - GASTOS DEL MES (DOBLE AGRUPACIÓN: Categoría -> Conceptos)
+  // ========================================================
   let contGastos = document.getElementById('grafico-gastos'); contGastos.innerHTML = '';
-  if (datos.gastosDashboard && datos.gastosDashboard.length > 0) {
-    let max = datos.gastosDashboard[0].total;
-    datos.gastosDashboard.forEach(g => {
-      let pct = (g.total / max) * 100;
-      contGastos.innerHTML += `<div style="margin-bottom:12px;"><div style="display:flex; justify-content:space-between; font-size:0.85rem; font-weight:bold; color:var(--primary);"><span>${g.categoria}</span><span style="color:var(--danger);">${moneda.format(g.total)}</span></div><div style="background:#e2e8f0; border-radius:5px; height:8px; width:100%; margin-top:5px;"><div style="background:var(--danger); height:100%; border-radius:5px; width:${pct}%;"></div></div></div>`;
-    });
-  } else { contGastos.innerHTML = '<p style="font-size:0.9rem; color:#64748b;">No hay gastos registrados este mes.</p>'; }
+  let egresosMes = (datos.listaCaja || []).filter(mov => mov.tipo === "Egreso");
 
+  if (egresosMes.length > 0) {
+    // 1. Agrupar Egresos: Primero por Categoría, y dentro por Conceptos sumados
+    let gastosAgrup = egresosMes.reduce((acc, mov) => {
+      let cat = mov.categoria || "Otros";
+      let conc = mov.concepto || "Varios";
+      
+      // Si la categoría no existe, la creamos
+      if (!acc[cat]) { acc[cat] = { total: 0, conceptos: {} }; }
+      
+      // Sumamos al total de la Categoría
+      acc[cat].total += parseFloat(mov.monto) || 0;
+      
+      // Si el concepto no existe dentro de esta categoría, lo creamos
+      if (!acc[cat].conceptos[conc]) { acc[cat].conceptos[conc] = 0; }
+      
+      // Sumamos al total de ese Concepto en específico
+      acc[cat].conceptos[conc] += parseFloat(mov.monto) || 0;
+      
+      return acc;
+    }, {});
+
+    // 2. Convertir el objeto a un Array ordenado de mayor a menor gasto
+    let arrayGastos = Object.keys(gastosAgrup).map(cat => ({
+      categoria: cat, 
+      total: gastosAgrup[cat].total, 
+      conceptos: Object.keys(gastosAgrup[cat].conceptos).map(c => ({
+        nombre: c, 
+        monto: gastosAgrup[cat].conceptos[c]
+      })).sort((a, b) => b.monto - a.monto) // Ordenar conceptos internamente
+    })).sort((a, b) => b.total - a.total); // Ordenar categorías
+
+    let max = arrayGastos[0].total;
+
+    // 3. Imprimir el HTML con los detalles desplegables
+    arrayGastos.forEach(g => {
+      let pct = (g.total / max) * 100;
+      contGastos.innerHTML += `
+      <details style="margin-bottom:12px; background:white; border-radius:8px; border:1px solid #e2e8f0; overflow:hidden;">
+        <summary style="list-style:none; cursor:pointer; padding:12px;">
+          <div style="display:flex; justify-content:space-between; font-size:0.9rem; font-weight:bold; color:var(--primary);">
+            <span><i class="fas fa-chevron-down" style="color:#94a3b8; margin-right:6px; font-size:0.8rem;"></i> ${g.categoria}</span>
+            <span style="color:var(--danger);">${moneda.format(g.total)}</span>
+          </div>
+          <div style="background:#e2e8f0; border-radius:5px; height:6px; width:100%; margin-top:8px;">
+            <div style="background:var(--danger); height:100%; border-radius:5px; width:${pct}%;"></div>
+          </div>
+        </summary>
+        <div style="padding: 10px 15px; border-top: 1px solid #f1f5f9; background:#f8fafc;">
+          <ul style="list-style:none; padding:0; margin:0; font-size:0.8rem;">
+            ${g.conceptos.map(c => `
+              <li style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed #cbd5e1;">
+                <span style="color:#64748b;"><i class="fas fa-angle-right" style="margin-right:4px; font-size:0.7rem; color:#cbd5e1;"></i> ${c.nombre}</span>
+                <span style="color:#475569; font-weight:bold;">${moneda.format(c.monto)}</span>
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+      </details>`;
+    });
+  } else { 
+    contGastos.innerHTML = '<p style="font-size:0.9rem; color:#64748b; padding:5px;">No hay gastos registrados este mes.</p>'; 
+  }
+
+  // Stock e Inventario
   stockDisponible = datos.productosStock || [];
   let selectVenta = document.getElementById('ven-producto');
   selectVenta.innerHTML = '<option value="">Selecciona qué vas a vender...</option>';
@@ -92,6 +158,7 @@ function actualizarUI(datos) {
     });
   } else { ulStock.innerHTML = "<li style='justify-content:center; color:#64748b;'>Inventario vacío.</li>"; }
 
+  // Taller
   let ulTaller = document.getElementById('ul-taller'); ulTaller.innerHTML = '';
   if (datos.listaTaller && datos.listaTaller.length > 0) {
     datos.listaTaller.forEach(item => {
@@ -105,24 +172,27 @@ function actualizarUI(datos) {
     });
   } else { ulTaller.innerHTML = "<li style='justify-content:center; color:#64748b;'>No hay equipos pendientes.</li>"; }
 
-  // 5. Vista DEUDAS (Con estado Al Día)
+  // 5. Vista DEUDAS (Implementa Memoria Local)
   let ulDeudas = document.getElementById('ul-deudas'); ulDeudas.innerHTML = '';
   if (datos.listaDeudas && datos.listaDeudas.length > 0) {
     datos.listaDeudas.forEach(item => {
+      let pagadoLocal = pagosLocales[item.acreedor + "_" + mesActual];
+      let estaPagado = item.pagadoEsteMes || pagadoLocal;
+
       let colorVenc = item.venceEn <= 5 ? "color:var(--danger);" : "color:var(--primary);";
       let textoVenc = item.venceEn < 0 ? "¡Vencido!" : (item.venceEn === 0 ? "Vence HOY" : `En ${item.venceEn} d.`);
       
-      let botonAccion = item.pagadoEsteMes
+      let botonAccion = estaPagado
         ? `<button style="background:var(--success); color:white; border:none; padding:8px 10px; border-radius:8px; font-weight:bold; font-size:0.85rem;" disabled><i class="fas fa-check"></i> Al día</button>`
         : `<button class="btn-action-pay" onclick="abrirPagoDeuda(${item.fila}, '${limpiarTexto(item.acreedor)}', ${item.monto})">Pagar</button>`;
       
-      let detalleEstado = item.pagadoEsteMes 
+      let detalleEstado = estaPagado 
         ? '<span style="color:var(--success); font-weight:bold;"><i class="fas fa-check-circle"></i> Pagado este mes</span>'
         : `<span>${item.cuotaInfo} - ${textoVenc}</span>`;
 
       ulDeudas.innerHTML += `<li>
         <div class="lista-texto">
-          <strong style="${item.pagadoEsteMes ? 'color:var(--primary);' : colorVenc}">${item.acreedor}</strong><br>
+          <strong style="${estaPagado ? 'color:var(--primary);' : colorVenc}">${item.acreedor}</strong><br>
           ${detalleEstado}<br>
           <strong>${moneda.format(item.monto)}</strong>
         </div>
@@ -134,30 +204,23 @@ function actualizarUI(datos) {
     });
   } else { ulDeudas.innerHTML = "<li style='justify-content:center; color:#64748b;'>No hay deudas activas.</li>"; }
 
-  // ========================================================
-  // 6. Vista CAJA (MODIFICADA: Agrupa Gastos / Muestra Ingresos)
-  // ========================================================
+  // 6. Vista CAJA (Agrupado por categoría para Historial)
   let ulCaja = document.getElementById('ul-caja'); ulCaja.innerHTML = '';
   if (datos.listaCaja && datos.listaCaja.length > 0) {
     const egresos = datos.listaCaja.filter(mov => mov.tipo === "Egreso");
     const ingresos = datos.listaCaja.filter(mov => mov.tipo === "Ingreso");
 
-    // Agrupar los Egresos (Gastos) por Categoría
     const gastosAgrupados = egresos.reduce((acc, mov) => {
-      if (!acc[mov.categoria]) {
-        acc[mov.categoria] = { total: 0, detalles: [] };
-      }
+      if (!acc[mov.categoria]) acc[mov.categoria] = { total: 0, detalles: [] };
       acc[mov.categoria].total += parseFloat(mov.monto) || 0;
-      acc[mov.categoria].detalles.push(mov);
+      acc[mov.categoria].detalles.push(mov); // Guarda transacciones individuales para historial
       return acc;
     }, {});
 
     let htmlCaja = "";
 
-    // Construir bloque de EGRESOS AGRUPADOS (Acordeón)
     if (Object.keys(gastosAgrupados).length > 0) {
       htmlCaja += `<h4 style="color:var(--danger); margin: 15px 0 10px 0;"><i class="fas fa-arrow-down"></i> Egresos Agrupados</h4>`;
-      
       for (const categoria in gastosAgrupados) {
         const grupo = gastosAgrupados[categoria];
         htmlCaja += `
@@ -176,35 +239,25 @@ function actualizarUI(datos) {
                 `).join('')}
               </ul>
             </div>
-          </details>
-        `;
+          </details>`;
       }
     }
 
-    // Construir bloque de INGRESOS (Lista normal)
     if (ingresos.length > 0) {
       htmlCaja += `<h4 style="color:var(--success); margin: 20px 0 10px 0;"><i class="fas fa-arrow-up"></i> Ingresos</h4>`;
       ingresos.forEach(ing => {
         htmlCaja += `
           <li style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-            <div style="line-height:1.4;">
-              <strong style="color:var(--primary);">${ing.concepto}</strong><br>
-              <small style="color:#64748b;">${ing.categoria} | ${ing.fecha}</small>
-            </div>
+            <div style="line-height:1.4;"><strong style="color:var(--primary);">${ing.concepto}</strong><br><small style="color:#64748b;">${ing.categoria} | ${ing.fecha}</small></div>
             <strong style="color:var(--success); font-size:1.05rem;">+ ${moneda.format(ing.monto)}</strong>
-          </li>
-        `;
+          </li>`;
       });
     }
-
     ulCaja.innerHTML = htmlCaja;
-  } else { 
-    ulCaja.innerHTML = "<li style='justify-content:center; color:#64748b;'>Sin movimientos.</li>"; 
-  }
-
+  } else { ulCaja.innerHTML = "<li style='justify-content:center; color:#64748b;'>Sin movimientos.</li>"; }
 
   // ========================================================
-  // 7. ALERTAS DASHBOARD (MODIFICADO: Oculta si ya se pagó)
+  // 7. ALERTAS DASHBOARD (Oculta usando Memoria Local)
   // ========================================================
   let listaA = document.getElementById('lista-alertas'); listaA.innerHTML = ''; let numAlertas = 0;
   
@@ -220,10 +273,11 @@ function actualizarUI(datos) {
   
   if (datos.alertasDeuda && datos.alertasDeuda.length > 0) {
     datos.alertasDeuda.forEach(deuda => {
-      // MAGIA AQUÍ: Buscamos en la lista principal si esta deuda ya tiene el check de "pagadoEsteMes"
+      let pagadoLocal = pagosLocales[deuda.acreedor + "_" + mesActual];
       let deudaEnListaPrincipal = (datos.listaDeudas || []).find(d => d.acreedor === deuda.acreedor);
-      if (deuda.pagadoEsteMes || (deudaEnListaPrincipal && deudaEnListaPrincipal.pagadoEsteMes)) {
-        return; // Salta a la siguiente, no la dibuja en las alertas
+      
+      if (deuda.pagadoEsteMes || (deudaEnListaPrincipal && deudaEnListaPrincipal.pagadoEsteMes) || pagadoLocal) {
+        return; // Salta esta alerta, desaparece al instante de la campanita
       }
 
       let estadoTxt = deuda.diasFaltantes < 0 ? "¡VENCIDO!" : (deuda.diasFaltantes === 0 ? "Vence HOY" : `En ${deuda.diasFaltantes} días`);
@@ -261,14 +315,28 @@ function enviarVenta(e) { e.preventDefault(); let idProd = document.getElementBy
 function enviarCaja(e) { e.preventDefault(); procesarEnvio({accion: 'caja', tipo: document.getElementById('caja-tipo').value, categoria: document.getElementById('caja-categoria').value, concepto: document.getElementById('caja-concepto').value, monto: document.getElementById('caja-monto').value, metodo: document.getElementById('caja-metodo').value}, 'modal-caja', 'form-caja', 'btn-caja'); }
 function enviarTaller(e) { e.preventDefault(); procesarEnvio({accion: 'taller', cliente: document.getElementById('tal-cliente').value, equipo: document.getElementById('tal-equipo').value, falla: document.getElementById('tal-falla').value, presupuesto: document.getElementById('tal-presupuesto').value}, 'modal-taller', 'form-taller', 'btn-tal'); }
 function enviarInventario(e) { e.preventDefault(); procesarEnvio({accion: 'inventario', tipo: document.getElementById('inv-tipo').value, descripcion: document.getElementById('inv-desc').value, costo: document.getElementById('inv-costo').value, precio: document.getElementById('inv-precio').value, stock: document.getElementById('inv-stock').value, minimo: document.getElementById('inv-min').value, registrarGasto: document.getElementById('inv-gasto').checked}, 'modal-inventario', 'form-inventario', 'btn-inv'); }
-function enviarDeuda(e) { e.preventDefault(); procesarEnvio({accion: 'deuda', acreedor: document.getElementById('deu-categoria').value + " - " + document.getElementById('deu-acreedor').value, montoTotal: document.getElementById('deu-monto-total').value || "", montoCuota: document.getElementById('deu-monto-cuota').value || "", cuotaActual: document.getElementById('deu-cuota-actual').value || "", cuotasTotales: document.getElementById('deu-cuota-total').value || "", diaVenc: document.getElementById('deu-dia').value}, 'modal-deuda', 'form-deuda', 'btn-deu'); }
 function enviarCobroTaller(e) { e.preventDefault(); procesarEnvio({accion: 'cobrar_taller', idOrden: document.getElementById('cob-id').value, concepto: document.getElementById('cob-info').value, montoCobrado: document.getElementById('cob-monto').value, metodo: document.getElementById('cob-metodo').value}, 'modal-cobro', 'form-cobro', 'btn-cob'); }
-function enviarPagoDeuda(e) { e.preventDefault(); procesarEnvio({accion: 'pagar_deuda', fila: document.getElementById('pag-fila').value, acreedor: document.getElementById('pag-acreedor').value, monto: document.getElementById('pag-monto').value, metodo: document.getElementById('pag-metodo').value}, 'modal-pago-confirmar', 'form-pago-deuda', 'btn-pagar'); }
 function enviarEditInv(e) { e.preventDefault(); procesarEnvio({accion: 'editar_inventario', id: document.getElementById('ei-id').value, tipo: document.getElementById('ei-tipo').value, descripcion: document.getElementById('ei-desc').value, costo: document.getElementById('ei-costo').value, precio: document.getElementById('ei-precio').value, stock: document.getElementById('ei-stock').value, minimo: document.getElementById('ei-min').value}, 'modal-edit-inv', 'form-edit-inv', 'btn-ei'); }
 function enviarEditTaller(e) { e.preventDefault(); procesarEnvio({accion: 'editar_taller', id: document.getElementById('et-id').value, cliente: document.getElementById('et-cliente').value, equipo: document.getElementById('et-equipo').value, falla: document.getElementById('et-falla').value, presupuesto: document.getElementById('et-presupuesto').value}, 'modal-edit-taller', 'form-edit-taller', 'btn-et'); }
 function enviarEditDeuda(e) { e.preventDefault(); procesarEnvio({accion: 'editar_deuda', fila: document.getElementById('ed-fila').value, acreedor: document.getElementById('ed-acreedor').value, montoTotal: document.getElementById('ed-total').value || "", montoCuota: document.getElementById('ed-monto').value || "", cuotaActual: document.getElementById('ed-cuota-actual').value || "", cuotasTotales: document.getElementById('ed-cuota-total').value || "", diaVenc: document.getElementById('ed-dia').value}, 'modal-edit-deuda', 'form-edit-deuda', 'btn-ed'); }
 
-function procesarEnvio(datos, idModal, idForm, idBtn) {
+function enviarPagoDeuda(e) { 
+  e.preventDefault(); 
+  let acreedor = document.getElementById('pag-acreedor').value;
+  procesarEnvio(
+    {accion: 'pagar_deuda', fila: document.getElementById('pag-fila').value, acreedor: acreedor, monto: document.getElementById('pag-monto').value, metodo: document.getElementById('pag-metodo').value}, 
+    'modal-pago-confirmar', 'form-pago-deuda', 'btn-pagar', 
+    function() {
+      let pagosLocales = JSON.parse(localStorage.getItem("pagos_locales") || "{}");
+      let fecha = new Date();
+      let mesActual = fecha.getFullYear() + "-" + (fecha.getMonth() + 1);
+      pagosLocales[acreedor + "_" + mesActual] = true;
+      localStorage.setItem("pagos_locales", JSON.stringify(pagosLocales));
+    }
+  ); 
+}
+
+function procesarEnvio(datos, idModal, idForm, idBtn, callbackExito = null) {
   let btn = document.getElementById(idBtn); let textoOrig = btn.innerText; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>...'; btn.disabled = true;
   fetch(URL_APPS_SCRIPT, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(datos) })
   .then(r => r.json()).then(res => {
@@ -276,7 +344,8 @@ function procesarEnvio(datos, idModal, idForm, idBtn) {
       cerrarModal(idModal); 
       document.getElementById(idForm).reset(); 
       mostrarToast("¡Guardado correctamente!"); 
-      obtenerDatosSilencioso(); // Esto recargará los datos y las alertas desaparecerán al instante.
+      if(callbackExito) callbackExito(); 
+      obtenerDatosSilencioso(); 
     } else alert("Error: " + res.error);
   }).catch(e => alert("Error de red.")).finally(() => { btn.innerText = textoOrig; btn.disabled = false; });
 }
