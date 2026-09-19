@@ -78,16 +78,14 @@ function actualizarUI(datos) {
   let contGastos = document.getElementById('grafico-gastos'); 
   let cardGastos = contGastos.parentElement;
   
-  // Limpiamos el diseño estático original desde JavaScript para hacerlo un gran botón desplegable
   let h3Original = cardGastos.querySelector('h3');
   if (h3Original) h3Original.style.display = 'none';
-  cardGastos.style.padding = '0'; // Quitamos los bordes internos
+  cardGastos.style.padding = '0'; 
   contGastos.style.marginTop = '0'; 
 
   let egresosMes = (datos.listaCaja || []).filter(mov => mov.tipo === "Egreso");
   let totalGastosMes = egresosMes.reduce((acc, mov) => acc + (parseFloat(mov.monto) || 0), 0);
 
-  // HTML Principal de la Tarjeta Desplegable
   let htmlGastos = `
     <details style="width: 100%;">
       <summary style="list-style: none; cursor: pointer; padding: 15px; display: flex; justify-content: space-between; align-items: center; outline: none; background: white;">
@@ -152,27 +150,64 @@ function actualizarUI(datos) {
   } else { 
     htmlGastos += '<p style="font-size:0.9rem; color:#64748b; padding:5px; margin:0;">No hay gastos registrados este mes.</p>'; 
   }
-
-  // Cierre de la Tarjeta Desplegable
   htmlGastos += `</div></details>`;
   contGastos.innerHTML = htmlGastos;
 
 
-  // Stock e Inventario
+  // ========================================================
+  // INVENTARIO Y VENTAS (Modificado para Historial)
+  // ========================================================
   stockDisponible = datos.productosStock || [];
   let selectVenta = document.getElementById('ven-producto');
   selectVenta.innerHTML = '<option value="">Selecciona qué vas a vender...</option>';
   stockDisponible.forEach(prod => { selectVenta.innerHTML += `<option value="${prod.id}">${prod.nombre} - ${moneda.format(prod.precio)}</option>`; });
 
   let ulStock = document.getElementById('ul-stock'); ulStock.innerHTML = '';
+  let htmlStock = "";
   if (datos.listaInventario && datos.listaInventario.length > 0) {
     datos.listaInventario.forEach(item => {
-      ulStock.innerHTML += `<li>
+      htmlStock += `<li>
         <div class="lista-texto"><strong>${item.desc}</strong><br>Costo: ${moneda.format(item.costo)} | Venta: ${moneda.format(item.precio)}</div> 
         <div style="display:flex; gap:5px; align-items:center;"><span class="badge-stock">${item.stock}</span><button class="btn-edit" onclick="abrirEditInv('${item.id}', '${item.tipo}', '${limpiarTexto(item.desc)}', ${item.costo}, ${item.precio}, ${item.stock}, ${item.minimo})"><i class="fas fa-pen"></i></button></div>
       </li>`;
     });
-  } else { ulStock.innerHTML = "<li style='justify-content:center; color:#64748b;'>Inventario vacío.</li>"; }
+  } else { 
+    htmlStock += "<li style='justify-content:center; color:#64748b;'>Inventario vacío.</li>"; 
+  }
+
+  // Agregamos el Apartado de Ventas al final del Inventario
+  let ventasList = (datos.listaCaja || []).filter(mov => mov.categoria === "Ventas" && mov.tipo === "Ingreso");
+  let totalVentas = ventasList.reduce((acc, v) => acc + (parseFloat(v.monto) || 0), 0);
+  
+  htmlStock += `
+    <li style="background: transparent; border: none; padding: 0; margin-top: 25px; box-shadow: none;">
+      <details style="width: 100%; background: white; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+        <summary style="padding: 15px; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; outline: none;">
+          <span style="color: var(--primary); font-size: 1.05rem;"><i class="fas fa-shopping-cart"></i> Historial de Ventas</span>
+          <span style="color: var(--success); font-size: 1.1rem;">${moneda.format(totalVentas)}</span>
+        </summary>
+        <div style="padding: 15px; border-top: 1px solid #e2e8f0;">
+          <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.9rem;">
+  `;
+  
+  if (ventasList.length > 0) {
+    ventasList.forEach(v => {
+      htmlStock += `
+        <li style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed #cbd5e1;">
+          <span style="color: #475569; line-height: 1.4;">
+            <strong style="color:var(--primary);">${v.concepto}</strong><br>
+            <small style="color: #94a3b8;"><i class="far fa-calendar-alt"></i> ${v.fecha} | Método: ${v.metodo}</small>
+          </span>
+          <span style="color: var(--success); font-weight: bold; font-size: 1rem;">+ ${moneda.format(v.monto)}</span>
+        </li>
+      `;
+    });
+  } else {
+    htmlStock += `<p style="color: #64748b; margin:0; text-align:center;">No hay ventas registradas aún.</p>`;
+  }
+  htmlStock += `</ul></div></details></li>`;
+  ulStock.innerHTML = htmlStock;
+
 
   // Taller
   let ulTaller = document.getElementById('ul-taller'); ulTaller.innerHTML = '';
@@ -219,11 +254,29 @@ function actualizarUI(datos) {
     });
   } else { ulDeudas.innerHTML = "<li style='justify-content:center; color:#64748b;'>No hay deudas activas.</li>"; }
 
-  // 6. Vista CAJA
+  // ========================================================
+  // 6. Vista CAJA (2 Grandes Desplegables: Salidas e Ingresos)
+  // ========================================================
   let ulCaja = document.getElementById('ul-caja'); ulCaja.innerHTML = '';
   if (datos.listaCaja && datos.listaCaja.length > 0) {
     const egresos = datos.listaCaja.filter(mov => mov.tipo === "Egreso");
     const ingresos = datos.listaCaja.filter(mov => mov.tipo === "Ingreso");
+    
+    let totalEgresos = egresos.reduce((acc, mov) => acc + (parseFloat(mov.monto) || 0), 0);
+    let totalIngresos = ingresos.reduce((acc, mov) => acc + (parseFloat(mov.monto) || 0), 0);
+
+    let htmlCaja = "";
+
+    // 🔴 DESPLEGABLE SALIDAS (EGRESOS)
+    htmlCaja += `
+      <details style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 15px;" open>
+        <summary style="padding: 15px; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; align-items: center; outline: none;">
+          <span style="color: var(--danger); font-size: 1.1rem;"><i class="fas fa-arrow-down"></i> Salidas (Egresos)</span>
+          <strong style="color: var(--danger); font-size: 1.1rem;">${moneda.format(totalEgresos)}</strong>
+        </summary>
+        <div style="padding: 10px; border-top: 1px solid #e2e8f0; background: #f8fafc;">
+    `;
+
     const gastosAgrupados = egresos.reduce((acc, mov) => {
       if (!acc[mov.categoria]) acc[mov.categoria] = { total: 0, detalles: [] };
       acc[mov.categoria].total += parseFloat(mov.monto) || 0;
@@ -231,18 +284,16 @@ function actualizarUI(datos) {
       return acc;
     }, {});
 
-    let htmlCaja = "";
     if (Object.keys(gastosAgrupados).length > 0) {
-      htmlCaja += `<h4 style="color:var(--danger); margin: 15px 0 10px 0;"><i class="fas fa-arrow-down"></i> Egresos Agrupados</h4>`;
       for (const categoria in gastosAgrupados) {
         const grupo = gastosAgrupados[categoria];
         htmlCaja += `
-          <details style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 8px;">
+          <details style="background: white; border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 8px;">
             <summary style="padding: 12px; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; align-items: center; list-style: none;">
               <span><i class="fas fa-folder-open" style="color:#94a3b8; margin-right:5px;"></i> ${categoria}</span>
               <span style="color: var(--danger);">${moneda.format(grupo.total)}</span>
             </summary>
-            <div style="padding: 10px 15px; border-top: 1px solid #e2e8f0; background: #ffffff; border-radius: 0 0 8px 8px;">
+            <div style="padding: 10px 15px; border-top: 1px solid #e2e8f0;">
               <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.85rem;">
                 ${grupo.detalles.map(d => `
                   <li style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #cbd5e1;">
@@ -254,18 +305,36 @@ function actualizarUI(datos) {
             </div>
           </details>`;
       }
+    } else {
+      htmlCaja += `<p style="color: #64748b; font-size: 0.9rem; margin: 5px;">No hay salidas registradas.</p>`;
     }
+    htmlCaja += `</div></details>`;
+
+    // 🟢 DESPLEGABLE ENTRADAS (INGRESOS)
+    htmlCaja += `
+      <details style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 15px;">
+        <summary style="padding: 15px; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; align-items: center; outline: none;">
+          <span style="color: var(--success); font-size: 1.1rem;"><i class="fas fa-arrow-up"></i> Entradas (Ingresos)</span>
+          <strong style="color: var(--success); font-size: 1.1rem;">${moneda.format(totalIngresos)}</strong>
+        </summary>
+        <div style="padding: 10px; border-top: 1px solid #e2e8f0; background: #f8fafc;">
+    `;
 
     if (ingresos.length > 0) {
-      htmlCaja += `<h4 style="color:var(--success); margin: 20px 0 10px 0;"><i class="fas fa-arrow-up"></i> Ingresos</h4>`;
+      htmlCaja += `<ul style="list-style: none; padding: 0; margin: 0;">`;
       ingresos.forEach(ing => {
         htmlCaja += `
-          <li style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+          <li style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
             <div style="line-height:1.4;"><strong style="color:var(--primary);">${ing.concepto}</strong><br><small style="color:#64748b;">${ing.categoria} | ${ing.fecha}</small></div>
             <strong style="color:var(--success); font-size:1.05rem;">+ ${moneda.format(ing.monto)}</strong>
           </li>`;
       });
+      htmlCaja += `</ul>`;
+    } else {
+      htmlCaja += `<p style="color: #64748b; font-size: 0.9rem; margin: 5px;">No hay entradas registradas.</p>`;
     }
+    htmlCaja += `</div></details>`;
+
     ulCaja.innerHTML = htmlCaja;
   } else { ulCaja.innerHTML = "<li style='justify-content:center; color:#64748b;'>Sin movimientos.</li>"; }
 
