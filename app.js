@@ -57,14 +57,24 @@ function actualizarUI(datos) {
   document.getElementById('main-content').style.display = 'block';
   let moneda = new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG' });
 
+  // Variables de tiempo
   let pagosLocales = JSON.parse(localStorage.getItem("pagos_locales") || "{}");
   let fechaHoy = new Date();
-  let mesActualStr = fechaHoy.getFullYear() + "-" + (fechaHoy.getMonth() + 1);
-  
-  // Filtro de fecha para igualar el Dashboard con el mes actual exacto
-  let mesFiltro = (fechaHoy.getMonth() + 1).toString().padStart(2, '0');
-  let anioFiltro = fechaHoy.getFullYear().toString();
-  let sufijoMesActual = `/${mesFiltro}/${anioFiltro}`; // Ej: "/09/2026"
+  let diaAct = fechaHoy.getDate().toString().padStart(2, '0');
+  let mesAct = (fechaHoy.getMonth() + 1).toString().padStart(2, '0');
+  let mesActSinCero = (fechaHoy.getMonth() + 1).toString();
+  let anioAct = fechaHoy.getFullYear();
+  let fechaFija = `${diaAct}/${mesAct}/${anioAct}`;
+  let mesActualStr = `${anioAct}-${mesAct}`; 
+
+  // AUTO-REPARACIÓN DE FECHAS: Convierte los "Sin fecha" a la fecha de hoy instantáneamente
+  if (datos.listaCaja) {
+    datos.listaCaja.forEach(mov => {
+      if (!mov.fecha || mov.fecha === "Sin fecha" || String(mov.fecha).trim() === "") {
+        mov.fecha = fechaFija;
+      }
+    });
+  }
 
   // 1. Dashboard - Tarjetas de Resumen
   document.getElementById('val-ingresos').innerText = moneda.format(datos.ingresosMes || 0);
@@ -78,7 +88,7 @@ function actualizarUI(datos) {
   document.getElementById('val-taller').innerText = moneda.format(datos.proyeccionTaller || 0);
 
   // ========================================================
-  // DASHBOARD - GASTOS DEL MES (TOTAL DESPLEGABLE CON FILTRO)
+  // DASHBOARD - GASTOS DEL MES (REPARADO Y SINCRONIZADO)
   // ========================================================
   let contGastos = document.getElementById('grafico-gastos'); 
   let cardGastos = contGastos.parentElement;
@@ -88,9 +98,18 @@ function actualizarUI(datos) {
   cardGastos.style.padding = '0'; 
   contGastos.style.marginTop = '0'; 
 
-  // AQUÍ ESTÁ LA SOLUCIÓN: Filtramos solo los Egresos que contengan la fecha de este mes
-  let egresosMes = (datos.listaCaja || []).filter(mov => mov.tipo === "Egreso" && mov.fecha.includes(sufijoMesActual));
-  let totalGastosMes = egresosMes.reduce((acc, mov) => acc + (parseFloat(mov.monto) || 0), 0);
+  // Filtro flexible que atrapa meses con y sin cero
+  let egresosMes = (datos.listaCaja || []).filter(mov => {
+    if (mov.tipo !== "Egreso") return false;
+    let f = String(mov.fecha);
+    return f.includes(`/${mesAct}/${anioAct}`) || 
+           f.includes(`/${mesActSinCero}/${anioAct}`) ||
+           f.includes(`-${mesAct}-${anioAct}`) ||
+           f.includes(`-${mesActSinCero}-${anioAct}`);
+  });
+
+  // Forzamos que el título tome el cálculo matemático perfecto que viene del servidor
+  let totalGastosMes = datos.egresosMes || 0;
 
   let htmlGastos = `
     <details style="width: 100%;">
@@ -161,7 +180,7 @@ function actualizarUI(datos) {
 
 
   // ========================================================
-  // INVENTARIO Y VENTAS (Modificado para Historial)
+  // INVENTARIO Y VENTAS
   // ========================================================
   stockDisponible = datos.productosStock || [];
   let selectVenta = document.getElementById('ven-producto');
@@ -181,7 +200,6 @@ function actualizarUI(datos) {
     htmlStock += "<li style='justify-content:center; color:#64748b;'>Inventario vacío.</li>"; 
   }
 
-  // Agregamos el Apartado de Ventas al final del Inventario
   let ventasList = (datos.listaCaja || []).filter(mov => mov.categoria === "Ventas" && mov.tipo === "Ingreso");
   let totalVentas = ventasList.reduce((acc, v) => acc + (parseFloat(v.monto) || 0), 0);
   
@@ -198,7 +216,6 @@ function actualizarUI(datos) {
   
   if (ventasList.length > 0) {
     ventasList.forEach(v => {
-      // AQUÍ CORREGIMOS EL POSIBLE ERROR DE TEXTO BASURA EN VENTAS
       let metodoPago = v.metodo ? v.metodo.trim() : "Efectivo";
       htmlStock += `
         <li style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed #cbd5e1;">
@@ -215,7 +232,6 @@ function actualizarUI(datos) {
   }
   htmlStock += `</ul></div></details></li>`;
   ulStock.innerHTML = htmlStock;
-
 
   // Taller
   let ulTaller = document.getElementById('ul-taller'); ulTaller.innerHTML = '';
@@ -263,11 +279,10 @@ function actualizarUI(datos) {
   } else { ulDeudas.innerHTML = "<li style='justify-content:center; color:#64748b;'>No hay deudas activas.</li>"; }
 
   // ========================================================
-  // 6. Vista CAJA (2 Grandes Desplegables: Salidas e Ingresos)
+  // 6. Vista CAJA
   // ========================================================
   let ulCaja = document.getElementById('ul-caja'); ulCaja.innerHTML = '';
   if (datos.listaCaja && datos.listaCaja.length > 0) {
-    // Para el historial de caja general mostramos todo (sin filtro de mes)
     const egresos = datos.listaCaja.filter(mov => mov.tipo === "Egreso");
     const ingresos = datos.listaCaja.filter(mov => mov.tipo === "Ingreso");
     
@@ -276,7 +291,7 @@ function actualizarUI(datos) {
 
     let htmlCaja = "";
 
-    // 🔴 DESPLEGABLE SALIDAS (EGRESOS)
+    // DESPLEGABLE SALIDAS (EGRESOS)
     htmlCaja += `
       <details style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 15px;" open>
         <summary style="padding: 15px; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; align-items: center; outline: none;">
@@ -305,7 +320,6 @@ function actualizarUI(datos) {
             <div style="padding: 10px 15px; border-top: 1px solid #e2e8f0;">
               <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.85rem;">
                 ${grupo.detalles.map(d => {
-                  // AQUÍ CORREGIMOS EL POSIBLE ERROR DE TEXTO BASURA EN EGRESOS
                   let mPago = d.metodo ? d.metodo.trim() : "Efectivo";
                   return `
                   <li style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #cbd5e1;">
@@ -322,7 +336,7 @@ function actualizarUI(datos) {
     }
     htmlCaja += `</div></details>`;
 
-    // 🟢 DESPLEGABLE ENTRADAS (INGRESOS)
+    // DESPLEGABLE ENTRADAS (INGRESOS)
     htmlCaja += `
       <details style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 15px;">
         <summary style="padding: 15px; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; align-items: center; outline: none;">
