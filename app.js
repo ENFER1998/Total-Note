@@ -58,8 +58,13 @@ function actualizarUI(datos) {
   let moneda = new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG' });
 
   let pagosLocales = JSON.parse(localStorage.getItem("pagos_locales") || "{}");
-  let fecha = new Date();
-  let mesActual = fecha.getFullYear() + "-" + (fecha.getMonth() + 1);
+  let fechaHoy = new Date();
+  let mesActualStr = fechaHoy.getFullYear() + "-" + (fechaHoy.getMonth() + 1);
+  
+  // Filtro de fecha para igualar el Dashboard con el mes actual exacto
+  let mesFiltro = (fechaHoy.getMonth() + 1).toString().padStart(2, '0');
+  let anioFiltro = fechaHoy.getFullYear().toString();
+  let sufijoMesActual = `/${mesFiltro}/${anioFiltro}`; // Ej: "/09/2026"
 
   // 1. Dashboard - Tarjetas de Resumen
   document.getElementById('val-ingresos').innerText = moneda.format(datos.ingresosMes || 0);
@@ -73,7 +78,7 @@ function actualizarUI(datos) {
   document.getElementById('val-taller').innerText = moneda.format(datos.proyeccionTaller || 0);
 
   // ========================================================
-  // DASHBOARD - GASTOS DEL MES (TOTAL DESPLEGABLE)
+  // DASHBOARD - GASTOS DEL MES (TOTAL DESPLEGABLE CON FILTRO)
   // ========================================================
   let contGastos = document.getElementById('grafico-gastos'); 
   let cardGastos = contGastos.parentElement;
@@ -83,7 +88,8 @@ function actualizarUI(datos) {
   cardGastos.style.padding = '0'; 
   contGastos.style.marginTop = '0'; 
 
-  let egresosMes = (datos.listaCaja || []).filter(mov => mov.tipo === "Egreso");
+  // AQUÍ ESTÁ LA SOLUCIÓN: Filtramos solo los Egresos que contengan la fecha de este mes
+  let egresosMes = (datos.listaCaja || []).filter(mov => mov.tipo === "Egreso" && mov.fecha.includes(sufijoMesActual));
   let totalGastosMes = egresosMes.reduce((acc, mov) => acc + (parseFloat(mov.monto) || 0), 0);
 
   let htmlGastos = `
@@ -192,11 +198,13 @@ function actualizarUI(datos) {
   
   if (ventasList.length > 0) {
     ventasList.forEach(v => {
+      // AQUÍ CORREGIMOS EL POSIBLE ERROR DE TEXTO BASURA EN VENTAS
+      let metodoPago = v.metodo ? v.metodo.trim() : "Efectivo";
       htmlStock += `
         <li style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed #cbd5e1;">
           <span style="color: #475569; line-height: 1.4;">
             <strong style="color:var(--primary);">${v.concepto}</strong><br>
-            <small style="color: #94a3b8;"><i class="far fa-calendar-alt"></i> ${v.fecha} | Método: ${v.metodo}</small>
+            <small style="color: #94a3b8;"><i class="far fa-calendar-alt"></i> ${v.fecha} - ${metodoPago}</small>
           </span>
           <span style="color: var(--success); font-weight: bold; font-size: 1rem;">+ ${moneda.format(v.monto)}</span>
         </li>
@@ -227,7 +235,7 @@ function actualizarUI(datos) {
   let ulDeudas = document.getElementById('ul-deudas'); ulDeudas.innerHTML = '';
   if (datos.listaDeudas && datos.listaDeudas.length > 0) {
     datos.listaDeudas.forEach(item => {
-      let pagadoLocal = pagosLocales[item.acreedor + "_" + mesActual];
+      let pagadoLocal = pagosLocales[item.acreedor + "_" + mesActualStr];
       let estaPagado = item.pagadoEsteMes || pagadoLocal;
       let colorVenc = item.venceEn <= 5 ? "color:var(--danger);" : "color:var(--primary);";
       let textoVenc = item.venceEn < 0 ? "¡Vencido!" : (item.venceEn === 0 ? "Vence HOY" : `En ${item.venceEn} d.`);
@@ -259,6 +267,7 @@ function actualizarUI(datos) {
   // ========================================================
   let ulCaja = document.getElementById('ul-caja'); ulCaja.innerHTML = '';
   if (datos.listaCaja && datos.listaCaja.length > 0) {
+    // Para el historial de caja general mostramos todo (sin filtro de mes)
     const egresos = datos.listaCaja.filter(mov => mov.tipo === "Egreso");
     const ingresos = datos.listaCaja.filter(mov => mov.tipo === "Ingreso");
     
@@ -271,7 +280,7 @@ function actualizarUI(datos) {
     htmlCaja += `
       <details style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 15px;" open>
         <summary style="padding: 15px; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; align-items: center; outline: none;">
-          <span style="color: var(--danger); font-size: 1.1rem;"><i class="fas fa-arrow-down"></i> Salidas (Egresos)</span>
+          <span style="color: var(--danger); font-size: 1.1rem;"><i class="fas fa-arrow-down"></i> Historial de Salidas</span>
           <strong style="color: var(--danger); font-size: 1.1rem;">${moneda.format(totalEgresos)}</strong>
         </summary>
         <div style="padding: 10px; border-top: 1px solid #e2e8f0; background: #f8fafc;">
@@ -295,12 +304,15 @@ function actualizarUI(datos) {
             </summary>
             <div style="padding: 10px 15px; border-top: 1px solid #e2e8f0;">
               <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.85rem;">
-                ${grupo.detalles.map(d => `
+                ${grupo.detalles.map(d => {
+                  // AQUÍ CORREGIMOS EL POSIBLE ERROR DE TEXTO BASURA EN EGRESOS
+                  let mPago = d.metodo ? d.metodo.trim() : "Efectivo";
+                  return `
                   <li style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #cbd5e1;">
-                    <span>${d.concepto} <br><small style="color:#94a3b8;">${d.fecha} \vert{}${d.metodo}</small></span>
+                    <span>${d.concepto} <br><small style="color:#94a3b8;"><i class="far fa-calendar-alt"></i> ${d.fecha} -${mPago}</small></span>
                     <span style="font-weight:600; color:#475569;">${moneda.format(d.monto)}</span>
                   </li>
-                `).join('')}
+                `}).join('')}
               </ul>
             </div>
           </details>`;
@@ -314,7 +326,7 @@ function actualizarUI(datos) {
     htmlCaja += `
       <details style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 15px;">
         <summary style="padding: 15px; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; align-items: center; outline: none;">
-          <span style="color: var(--success); font-size: 1.1rem;"><i class="fas fa-arrow-up"></i> Entradas (Ingresos)</span>
+          <span style="color: var(--success); font-size: 1.1rem;"><i class="fas fa-arrow-up"></i> Historial de Entradas</span>
           <strong style="color: var(--success); font-size: 1.1rem;">${moneda.format(totalIngresos)}</strong>
         </summary>
         <div style="padding: 10px; border-top: 1px solid #e2e8f0; background: #f8fafc;">
@@ -323,9 +335,13 @@ function actualizarUI(datos) {
     if (ingresos.length > 0) {
       htmlCaja += `<ul style="list-style: none; padding: 0; margin: 0;">`;
       ingresos.forEach(ing => {
+        let mPagoIng = ing.metodo ? ing.metodo.trim() : "Efectivo";
         htmlCaja += `
           <li style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-            <div style="line-height:1.4;"><strong style="color:var(--primary);">${ing.concepto}</strong><br><small style="color:#64748b;">${ing.categoria} | ${ing.fecha}</small></div>
+            <div style="line-height:1.4;">
+              <strong style="color:var(--primary);">${ing.concepto}</strong><br>
+              <small style="color:#64748b;"><i class="far fa-calendar-alt"></i> ${ing.fecha} - ${mPagoIng}</small>
+            </div>
             <strong style="color:var(--success); font-size:1.05rem;">+ ${moneda.format(ing.monto)}</strong>
           </li>`;
       });
@@ -355,7 +371,7 @@ function actualizarUI(datos) {
   
   if (datos.alertasDeuda && datos.alertasDeuda.length > 0) {
     datos.alertasDeuda.forEach(deuda => {
-      let pagadoLocal = pagosLocales[deuda.acreedor + "_" + mesActual];
+      let pagadoLocal = pagosLocales[deuda.acreedor + "_" + mesActualStr];
       let deudaEnListaPrincipal = (datos.listaDeudas || []).find(d => d.acreedor === deuda.acreedor);
       
       if (deuda.pagadoEsteMes || (deudaEnListaPrincipal && deudaEnListaPrincipal.pagadoEsteMes) || pagadoLocal) {
