@@ -59,7 +59,8 @@ function actualizarUI(datos) {
 
   let pagosLocales = JSON.parse(localStorage.getItem("pagos_locales") || "{}");
   let fechaHoy = new Date();
-  let mesActualFormatoBackend = `${(fechaHoy.getMonth() + 1).toString().padStart(2, '0')}/${fechaHoy.getFullYear()}`; // ej: "09/2026"
+  let anioAct = fechaHoy.getFullYear();
+  let mesActualFormatoBackend = `${(fechaHoy.getMonth() + 1).toString().padStart(2, '0')}/${anioAct}`; // ej: "09/2026"
   const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
   let nombreMesActual = nombresMeses[fechaHoy.getMonth()];
 
@@ -400,6 +401,8 @@ function enviarCobroTaller(e) { e.preventDefault(); procesarEnvio({accion: 'cobr
 function enviarEditInv(e) { e.preventDefault(); procesarEnvio({accion: 'editar_inventario', id: document.getElementById('ei-id').value, tipo: document.getElementById('ei-tipo').value, descripcion: document.getElementById('ei-desc').value, costo: document.getElementById('ei-costo').value, precio: document.getElementById('ei-precio').value, stock: document.getElementById('ei-stock').value, minimo: document.getElementById('ei-min').value}, 'modal-edit-inv', 'form-edit-inv', 'btn-ei'); }
 function enviarEditTaller(e) { e.preventDefault(); procesarEnvio({accion: 'editar_taller', id: document.getElementById('et-id').value, cliente: document.getElementById('et-cliente').value, equipo: document.getElementById('et-equipo').value, falla: document.getElementById('et-falla').value, presupuesto: document.getElementById('et-presupuesto').value}, 'modal-edit-taller', 'form-edit-taller', 'btn-et'); }
 function enviarEditDeuda(e) { e.preventDefault(); procesarEnvio({accion: 'editar_deuda', fila: document.getElementById('ed-fila').value, acreedor: document.getElementById('ed-acreedor').value, montoTotal: document.getElementById('ed-total').value || "", montoCuota: document.getElementById('ed-monto').value || "", cuotaActual: document.getElementById('ed-cuota-actual').value || "", cuotasTotales: document.getElementById('ed-cuota-total').value || "", diaVenc: document.getElementById('ed-dia').value}, 'modal-edit-deuda', 'form-edit-deuda', 'btn-ed'); }
+
+function enviarDeuda(e) { e.preventDefault(); procesarEnvio({accion: 'deuda', categoria: document.getElementById('deu-categoria').value, acreedor: document.getElementById('deu-acreedor').value, montoTotal: document.getElementById('deu-monto-total').value, cuotaActual: document.getElementById('deu-cuota-actual').value, cuotaTotal: document.getElementById('deu-cuota-total').value, montoCuota: document.getElementById('deu-monto-cuota').value, diaVencimiento: document.getElementById('deu-dia').value}, 'modal-deuda', 'form-deuda', 'btn-deu'); }
 
 function enviarPagoDeuda(e) { 
   e.preventDefault(); 
