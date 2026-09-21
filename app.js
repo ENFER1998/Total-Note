@@ -421,7 +421,7 @@ function enviarPagoDeuda(e) {
 }
 
 function procesarEnvio(datos, idModal, idForm, idBtn, callbackExito = null) {
-  let btn = document.getElementById(idBtn); let textoOrig = btn.innerText; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>...'; btn.disabled = true;
+  let btn = document.getElementById(idBtn); let textoOrig = btn.innerText; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true;
   fetch(URL_APPS_SCRIPT, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(datos) })
   .then(r => r.json()).then(res => {
     if (res.exito) { 
