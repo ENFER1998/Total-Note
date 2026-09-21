@@ -57,24 +57,11 @@ function actualizarUI(datos) {
   document.getElementById('main-content').style.display = 'block';
   let moneda = new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG' });
 
-  // Variables de tiempo
   let pagosLocales = JSON.parse(localStorage.getItem("pagos_locales") || "{}");
   let fechaHoy = new Date();
-  let diaAct = fechaHoy.getDate().toString().padStart(2, '0');
-  let mesAct = (fechaHoy.getMonth() + 1).toString().padStart(2, '0');
-  let mesActSinCero = (fechaHoy.getMonth() + 1).toString();
-  let anioAct = fechaHoy.getFullYear();
-  let fechaFija = `${diaAct}/${mesAct}/${anioAct}`;
-  let mesActualStr = `${anioAct}-${mesAct}`; 
-
-  // AUTO-REPARACIÓN DE FECHAS: Convierte los "Sin fecha" a la fecha de hoy instantáneamente
-  if (datos.listaCaja) {
-    datos.listaCaja.forEach(mov => {
-      if (!mov.fecha || mov.fecha === "Sin fecha" || String(mov.fecha).trim() === "") {
-        mov.fecha = fechaFija;
-      }
-    });
-  }
+  let mesActualFormatoBackend = `${(fechaHoy.getMonth() + 1).toString().padStart(2, '0')}/${fechaHoy.getFullYear()}`; // ej: "09/2026"
+  const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+  let nombreMesActual = nombresMeses[fechaHoy.getMonth()];
 
   // 1. Dashboard - Tarjetas de Resumen
   document.getElementById('val-ingresos').innerText = moneda.format(datos.ingresosMes || 0);
@@ -88,7 +75,7 @@ function actualizarUI(datos) {
   document.getElementById('val-taller').innerText = moneda.format(datos.proyeccionTaller || 0);
 
   // ========================================================
-  // DASHBOARD - GASTOS DEL MES (REPARADO Y SINCRONIZADO)
+  // DASHBOARD - GASTOS DEL MES
   // ========================================================
   let contGastos = document.getElementById('grafico-gastos'); 
   let cardGastos = contGastos.parentElement;
@@ -98,36 +85,26 @@ function actualizarUI(datos) {
   cardGastos.style.padding = '0'; 
   contGastos.style.marginTop = '0'; 
 
-  // Filtro flexible que atrapa meses con y sin cero
-  let egresosMes = (datos.listaCaja || []).filter(mov => {
-    if (mov.tipo !== "Egreso") return false;
-    let f = String(mov.fecha);
-    return f.includes(`/${mesAct}/${anioAct}`) || 
-           f.includes(`/${mesActSinCero}/${anioAct}`) ||
-           f.includes(`-${mesAct}-${anioAct}`) ||
-           f.includes(`-${mesActSinCero}-${anioAct}`);
-  });
-
-  // Forzamos que el título tome el cálculo matemático perfecto que viene del servidor
-  let totalGastosMes = datos.egresosMes || 0;
+  // Filtramos la lista usando la fecha limpia que nos manda el backend nuevo
+  let listaEgresosMes = (datos.listaCaja || []).filter(mov => mov.tipo === "Egreso" && mov.fecha.includes(mesActualFormatoBackend));
 
   let htmlGastos = `
     <details style="width: 100%;">
       <summary style="list-style: none; cursor: pointer; padding: 15px; display: flex; justify-content: space-between; align-items: center; outline: none; background: white;">
         <div style="display: flex; align-items: center; gap: 10px;">
           <i class="fas fa-chart-pie" style="color: var(--primary); font-size: 1.2rem;"></i>
-          <h3 style="margin: 0; color: var(--primary); font-size: 1.1rem;">Gastos del Mes</h3>
+          <h3 style="margin: 0; color: var(--primary); font-size: 1.1rem;">Gastos de ${nombreMesActual}</h3>
         </div>
         <div style="display: flex; align-items: center; gap: 10px;">
-          <strong style="color: var(--danger); font-size: 1.15rem;">${moneda.format(totalGastosMes)}</strong>
+          <strong style="color: var(--danger); font-size: 1.15rem;">${moneda.format(datos.egresosMes || 0)}</strong>
           <i class="fas fa-chevron-down" style="color: #94a3b8;"></i>
         </div>
       </summary>
       <div style="padding: 15px; border-top: 1px solid #e2e8f0; background: #f8fafc;">
   `;
 
-  if (egresosMes.length > 0) {
-    let gastosAgrup = egresosMes.reduce((acc, mov) => {
+  if (listaEgresosMes.length > 0) {
+    let gastosAgrup = listaEgresosMes.reduce((acc, mov) => {
       let cat = mov.categoria || "Otros";
       let conc = mov.concepto || "Varios";
       if (!acc[cat]) { acc[cat] = { total: 0, conceptos: {} }; }
@@ -138,11 +115,8 @@ function actualizarUI(datos) {
     }, {});
 
     let arrayGastos = Object.keys(gastosAgrup).map(cat => ({
-      categoria: cat, 
-      total: gastosAgrup[cat].total, 
-      conceptos: Object.keys(gastosAgrup[cat].conceptos).map(c => ({
-        nombre: c, monto: gastosAgrup[cat].conceptos[c]
-      })).sort((a, b) => b.monto - a.monto)
+      categoria: cat, total: gastosAgrup[cat].total, 
+      conceptos: Object.keys(gastosAgrup[cat].conceptos).map(c => ({ nombre: c, monto: gastosAgrup[cat].conceptos[c] })).sort((a, b) => b.monto - a.monto)
     })).sort((a, b) => b.total - a.total);
 
     let max = arrayGastos[0].total;
@@ -216,12 +190,11 @@ function actualizarUI(datos) {
   
   if (ventasList.length > 0) {
     ventasList.forEach(v => {
-      let metodoPago = v.metodo ? v.metodo.trim() : "Efectivo";
       htmlStock += `
         <li style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed #cbd5e1;">
           <span style="color: #475569; line-height: 1.4;">
             <strong style="color:var(--primary);">${v.concepto}</strong><br>
-            <small style="color: #94a3b8;"><i class="far fa-calendar-alt"></i> ${v.fecha} - ${metodoPago}</small>
+            <small style="color: #94a3b8;"><i class="far fa-calendar-alt"></i> ${v.fecha} - ${v.metodo}</small>
           </span>
           <span style="color: var(--success); font-weight: bold; font-size: 1rem;">+ ${moneda.format(v.monto)}</span>
         </li>
@@ -250,8 +223,9 @@ function actualizarUI(datos) {
   // 5. Vista DEUDAS
   let ulDeudas = document.getElementById('ul-deudas'); ulDeudas.innerHTML = '';
   if (datos.listaDeudas && datos.listaDeudas.length > 0) {
+    let mesActualStrDeuda = `${anioAct}-${(fechaHoy.getMonth() + 1).toString().padStart(2, '0')}`;
     datos.listaDeudas.forEach(item => {
-      let pagadoLocal = pagosLocales[item.acreedor + "_" + mesActualStr];
+      let pagadoLocal = pagosLocales[item.acreedor + "_" + mesActualStrDeuda];
       let estaPagado = item.pagadoEsteMes || pagadoLocal;
       let colorVenc = item.venceEn <= 5 ? "color:var(--danger);" : "color:var(--primary);";
       let textoVenc = item.venceEn < 0 ? "¡Vencido!" : (item.venceEn === 0 ? "Vence HOY" : `En ${item.venceEn} d.`);
@@ -319,14 +293,12 @@ function actualizarUI(datos) {
             </summary>
             <div style="padding: 10px 15px; border-top: 1px solid #e2e8f0;">
               <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.85rem;">
-                ${grupo.detalles.map(d => {
-                  let mPago = d.metodo ? d.metodo.trim() : "Efectivo";
-                  return `
+                ${grupo.detalles.map(d => `
                   <li style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #cbd5e1;">
-                    <span>${d.concepto} <br><small style="color:#94a3b8;"><i class="far fa-calendar-alt"></i> ${d.fecha} -${mPago}</small></span>
+                    <span>${d.concepto} <br><small style="color:#94a3b8;"><i class="far fa-calendar-alt"></i> ${d.fecha} -${d.metodo}</small></span>
                     <span style="font-weight:600; color:#475569;">${moneda.format(d.monto)}</span>
                   </li>
-                `}).join('')}
+                `).join('')}
               </ul>
             </div>
           </details>`;
@@ -349,12 +321,11 @@ function actualizarUI(datos) {
     if (ingresos.length > 0) {
       htmlCaja += `<ul style="list-style: none; padding: 0; margin: 0;">`;
       ingresos.forEach(ing => {
-        let mPagoIng = ing.metodo ? ing.metodo.trim() : "Efectivo";
         htmlCaja += `
           <li style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
             <div style="line-height:1.4;">
               <strong style="color:var(--primary);">${ing.concepto}</strong><br>
-              <small style="color:#64748b;"><i class="far fa-calendar-alt"></i> ${ing.fecha} - ${mPagoIng}</small>
+              <small style="color:#64748b;"><i class="far fa-calendar-alt"></i> ${ing.fecha} - ${ing.metodo}</small>
             </div>
             <strong style="color:var(--success); font-size:1.05rem;">+ ${moneda.format(ing.monto)}</strong>
           </li>`;
@@ -384,13 +355,12 @@ function actualizarUI(datos) {
   }
   
   if (datos.alertasDeuda && datos.alertasDeuda.length > 0) {
+    let mesActualStrAlerta = `${anioAct}-${(fechaHoy.getMonth() + 1).toString().padStart(2, '0')}`;
     datos.alertasDeuda.forEach(deuda => {
-      let pagadoLocal = pagosLocales[deuda.acreedor + "_" + mesActualStr];
+      let pagadoLocal = pagosLocales[deuda.acreedor + "_" + mesActualStrAlerta];
       let deudaEnListaPrincipal = (datos.listaDeudas || []).find(d => d.acreedor === deuda.acreedor);
+      if (deuda.pagadoEsteMes || (deudaEnListaPrincipal && deudaEnListaPrincipal.pagadoEsteMes) || pagadoLocal) return; 
       
-      if (deuda.pagadoEsteMes || (deudaEnListaPrincipal && deudaEnListaPrincipal.pagadoEsteMes) || pagadoLocal) {
-        return; 
-      }
       let estadoTxt = deuda.diasFaltantes < 0 ? "¡VENCIDO!" : (deuda.diasFaltantes === 0 ? "Vence HOY" : `En ${deuda.diasFaltantes} días`);
       listaA.innerHTML += `<li>
         <span style="color:var(--primary); line-height: 1.4; flex: 1; padding-right: 10px;">
@@ -440,7 +410,7 @@ function enviarPagoDeuda(e) {
     function() {
       let pagosLocales = JSON.parse(localStorage.getItem("pagos_locales") || "{}");
       let fecha = new Date();
-      let mesActual = fecha.getFullYear() + "-" + (fecha.getMonth() + 1);
+      let mesActual = fecha.getFullYear() + "-" + (fecha.getMonth() + 1).toString().padStart(2, '0');
       pagosLocales[acreedor + "_" + mesActual] = true;
       localStorage.setItem("pagos_locales", JSON.stringify(pagosLocales));
     }
