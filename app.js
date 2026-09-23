@@ -1,10 +1,10 @@
 const URL_APPS_SCRIPT = "https://script.google.com/macros/s/AKfycbziOBMxs0Xy1tO4gc18j5ZchSU-e8cN3IEEL0U3kw1ymGl7Gf8XA-Fqwp0O2CIIljT13A/exec";
 let stockDisponible = [];
 
-document.addEventListener("DOMContentLoaded", () => { 
+document.addEventListener("DOMContentLoaded", () => {
   let cache = localStorage.getItem("totalNote_datos");
   if (cache) actualizarUI(JSON.parse(cache));
-  obtenerDatosAPI(); 
+  obtenerDatosAPI();
   setInterval(obtenerDatosSilencioso, 12000);
 });
 
@@ -45,7 +45,7 @@ function actualizarUI(datos) {
   try {
     document.getElementById('loader').style.display = 'none';
     document.getElementById('main-content').style.display = 'block';
-
+    
     if (datos.error) {
         console.error("Error del backend:", datos.error);
         // Si el backend tira error, usamos el caché local para que no desaparezca la info
@@ -377,7 +377,7 @@ function actualizarUI(datos) {
     let listaA = document.getElementById('lista-alertas');
     if(listaA) {
       listaA.innerHTML = ''; let numAlertas = 0;
-      
+
       if (datos.stockBajo && datos.stockBajo.length > 0) {
         datos.stockBajo.forEach(aviso => {
           listaA.innerHTML += `<li>
@@ -439,12 +439,12 @@ function enviarEditDeuda(e) { e.preventDefault(); procesarEnvio({accion: 'editar
 
 function enviarDeuda(e) { e.preventDefault(); procesarEnvio({accion: 'deuda', categoria: document.getElementById('deu-categoria').value, acreedor: document.getElementById('deu-acreedor').value, montoTotal: document.getElementById('deu-monto-total').value, cuotaActual: document.getElementById('deu-cuota-actual').value, cuotaTotal: document.getElementById('deu-cuota-total').value, montoCuota: document.getElementById('deu-monto-cuota').value, diaVencimiento: document.getElementById('deu-dia').value}, 'modal-deuda', 'form-deuda', 'btn-deu'); }
 
-function enviarPagoDeuda(e) { 
-  e.preventDefault(); 
+function enviarPagoDeuda(e) {
+  e.preventDefault();
   let acreedor = document.getElementById('pag-acreedor').value;
   procesarEnvio(
-    {accion: 'pagar_deuda', fila: document.getElementById('pag-fila').value, acreedor: acreedor, monto: document.getElementById('pag-monto').value, metodo: document.getElementById('pag-metodo').value}, 
-    'modal-pago-confirmar', 'form-pago-deuda', 'btn-pagar', 
+    {accion: 'pagar_deuda', fila: document.getElementById('pag-fila').value, acreedor: acreedor, monto: document.getElementById('pag-monto').value, metodo: document.getElementById('pag-metodo').value},
+    'modal-pago-confirmar', 'form-pago-deuda', 'btn-pagar',
     function() {
       let pagosLocales = JSON.parse(localStorage.getItem("pagos_locales") || "{}");
       let fecha = new Date();
@@ -452,14 +452,14 @@ function enviarPagoDeuda(e) {
       pagosLocales[acreedor + "_" + mesActual] = true;
       localStorage.setItem("pagos_locales", JSON.stringify(pagosLocales));
     }
-  ); 
+  );
 }
 
 function procesarEnvio(datos, idModal, idForm, idBtn, callbackExito = null) {
   let btn = document.getElementById(idBtn); let textoOrig = btn.innerText; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true;
   fetch(URL_APPS_SCRIPT, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(datos) })
   .then(r => r.json()).then(res => {
-    if (res.exito) { 
+    if (res.exito) {
       cerrarModal(idModal); document.getElementById(idForm).reset(); mostrarToast("¡Guardado correctamente!");
       if(callbackExito) callbackExito(); obtenerDatosSilencioso();
     } else alert("Error: " + res.error);
