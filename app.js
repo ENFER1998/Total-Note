@@ -1,10 +1,10 @@
 const URL_APPS_SCRIPT = "https://script.google.com/macros/s/AKfycbziOBMxs0Xy1tO4gc18j5ZchSU-e8cN3IEEL0U3kw1ymGl7Gf8XA-Fqwp0O2CIIljT13A/exec";
 let stockDisponible = [];
 
-document.addEventListener("DOMContentLoaded", () => { 
+document.addEventListener("DOMContentLoaded", () => {
   let cache = localStorage.getItem("totalNote_datos");
   if (cache) actualizarUI(JSON.parse(cache));
-  obtenerDatosAPI(); 
+  obtenerDatosAPI();
   setInterval(obtenerDatosSilencioso, 12000);
 });
 
@@ -111,12 +111,12 @@ function actualizarUI(datos) {
     // ========================================================
     // DASHBOARD - GASTOS DEL MES (TOTAL DESPLEGABLE)
     // ========================================================
-    let contGastos = document.getElementById('grafico-gastos'); 
+    let contGastos = document.getElementById('grafico-gastos');
     if (contGastos) {
       let cardGastos = contGastos.parentElement;
       let h3Original = cardGastos.querySelector('h3');
       if (h3Original) h3Original.style.display = 'none';
-      cardGastos.style.padding = '0'; contGastos.style.marginTop = '0'; 
+      cardGastos.style.padding = '0'; contGastos.style.marginTop = '0';
 
       let htmlGastos = `
         <details style="width: 100%;">
@@ -144,7 +144,7 @@ function actualizarUI(datos) {
         }, {});
 
         let arrayGastos = Object.keys(gastosAgrup).map(cat => ({
-          categoria: cat, total: gastosAgrup[cat].total, 
+          categoria: cat, total: gastosAgrup[cat].total,
           conceptos: Object.keys(gastosAgrup[cat].conceptos).map(c => ({ nombre: c, monto: gastosAgrup[cat].conceptos[c] })).sort((a, b) => b.monto - a.monto)
         })).sort((a, b) => b.total - a.total);
 
@@ -190,13 +190,13 @@ function actualizarUI(datos) {
       stockDisponible.forEach(prod => { selectVenta.innerHTML += `<option value="${prod.id}">${prod.nombre} - ${moneda.format(prod.precio)}</option>`; });
     }
 
-    let ulStock = document.getElementById('ul-stock'); 
+    let ulStock = document.getElementById('ul-stock');
     if(ulStock) {
       ulStock.innerHTML = ''; let htmlStock = "";
       if (datos.listaInventario && datos.listaInventario.length > 0) {
         datos.listaInventario.forEach(item => {
           htmlStock += `<li>
-            <div class="lista-texto"><strong>${item.desc}</strong><br>Costo: ${moneda.format(item.costo)} | Venta: ${moneda.format(item.precio)}</div> 
+            <div class="lista-texto"><strong>${item.desc}</strong><br>Costo: ${moneda.format(item.costo)} | Venta: ${moneda.format(item.precio)}</div>
             <div style="display:flex; gap:5px; align-items:center;"><span class="badge-stock">${item.stock}</span><button class="btn-edit" onclick="abrirEditInv('${item.id}', '${item.tipo}', '${limpiarTexto(item.desc)}', ${item.costo}, ${item.precio}, ${item.stock}, ${item.minimo})"><i class="fas fa-pen"></i></button></div>
           </li>`;
         });
@@ -204,7 +204,7 @@ function actualizarUI(datos) {
 
       let ventasList = (datos.listaCaja || []).filter(mov => mov.categoria === "Ventas" && mov.tipo === "Ingreso");
       let totalVentas = ventasList.reduce((acc, v) => acc + (parseFloat(v.monto) || 0), 0);
-      
+
       htmlStock += `
         <li style="background: transparent; border: none; padding: 0; margin-top: 25px; box-shadow: none;">
           <details style="width: 100%; background: white; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
@@ -215,7 +215,7 @@ function actualizarUI(datos) {
             <div style="padding: 15px; border-top: 1px solid #e2e8f0;">
               <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.9rem;">
       `;
-      
+
       if (ventasList.length > 0) {
         ventasList.forEach(v => {
           htmlStock += `
@@ -240,7 +240,7 @@ function actualizarUI(datos) {
       if (datos.listaTaller && datos.listaTaller.length > 0) {
         datos.listaTaller.forEach(item => {
           ulTaller.innerHTML += `<li>
-            <div class="lista-texto"><strong>${item.cliente}</strong><br><span>${item.equipo} - ${item.falla}</span><br><strong style="color:var(--warning); font-size:0.9rem;">Gs. ${item.presupuesto}</strong></div> 
+            <div class="lista-texto"><strong>${item.cliente}</strong><br><span>${item.equipo} - ${item.falla}</span><br><strong style="color:var(--warning); font-size:0.9rem;">Gs. ${item.presupuesto}</strong></div>
             <div style="display:flex; flex-direction:column; gap:5px;">
               <button class="btn-action" onclick="abrirCobro('${item.id}', '${limpiarTexto(item.cliente)}', '${limpiarTexto(item.equipo)}', ${item.presupuesto})">Cobrar</button>
               <button class="btn-edit" onclick="abrirEditTaller('${item.id}', '${limpiarTexto(item.cliente)}', '${limpiarTexto(item.equipo)}', '${limpiarTexto(item.falla)}', ${item.presupuesto})"><i class="fas fa-pen"></i> Editar</button>
@@ -261,12 +261,12 @@ function actualizarUI(datos) {
           let estaPagado = item.pagadoEsteMes || pagadoLocal;
           let colorVenc = item.venceEn <= 5 ? "color:var(--danger);" : "color:var(--primary);";
           let textoVenc = item.venceEn < 0 ? "¡Vencido!" : (item.venceEn === 0 ? "Vence HOY" : `En ${item.venceEn} d.`);
-          
+
           let botonAccion = estaPagado
             ? `<button style="background:var(--success); color:white; border:none; padding:8px 10px; border-radius:8px; font-weight:bold; font-size:0.85rem;" disabled><i class="fas fa-check"></i> Al día</button>`
             : `<button class="btn-action-pay" onclick="abrirPagoDeuda(${item.fila}, '${limpiarTexto(item.acreedor)}', ${item.monto})">Pagar</button>`;
-          
-          let detalleEstado = estaPagado 
+
+          let detalleEstado = estaPagado
             ? '<span style="color:var(--success); font-weight:bold;"><i class="fas fa-check-circle"></i> Pagado este mes</span>'
             : `<span>${item.cuotaInfo} - ${textoVenc}</span>`;
 
@@ -288,13 +288,13 @@ function actualizarUI(datos) {
     // ========================================================
     // 6. Vista CAJA
     // ========================================================
-    let ulCaja = document.getElementById('ul-caja'); 
+    let ulCaja = document.getElementById('ul-caja');
     if(ulCaja) {
       ulCaja.innerHTML = '';
       if (datos.listaCaja && datos.listaCaja.length > 0) {
         const egresos = datos.listaCaja.filter(mov => mov.tipo === "Egreso");
         const ingresos = datos.listaCaja.filter(mov => mov.tipo === "Ingreso");
-        
+
         let totalEgresos = egresos.reduce((acc, mov) => acc + (parseFloat(mov.monto) || 0), 0);
         let totalIngresos = ingresos.reduce((acc, mov) => acc + (parseFloat(mov.monto) || 0), 0);
 
@@ -372,29 +372,29 @@ function actualizarUI(datos) {
     }
 
     // ========================================================
-    // 7. ALERTAS DASHBOARD 
+    // 7. ALERTAS DASHBOARD
     // ========================================================
-    let listaA = document.getElementById('lista-alertas'); 
+    let listaA = document.getElementById('lista-alertas');
     if(listaA) {
       listaA.innerHTML = ''; let numAlertas = 0;
-      
-      if (datos.stockBajo && datos.stockBajo.length > 0) { 
-        datos.stockBajo.forEach(aviso => { 
+
+      if (datos.stockBajo && datos.stockBajo.length > 0) {
+        datos.stockBajo.forEach(aviso => {
           listaA.innerHTML += `<li>
             <span style="color:var(--primary); font-weight:bold; flex: 1;"><i class="fas fa-box" style="color:#f59e0b;"></i> ${aviso}</span>
             <span class="texto-rojo" style="white-space: nowrap;">Comprar</span>
-          </li>`; 
+          </li>`;
           numAlertas++;
-        }); 
+        });
       }
-      
+
       if (datos.alertasDeuda && datos.alertasDeuda.length > 0) {
         let mesActualStrAlerta = `${anioAct}-${mesAct}`;
         datos.alertasDeuda.forEach(deuda => {
           let pagadoLocal = pagosLocales[deuda.acreedor + "_" + mesActualStrAlerta];
           let deudaEnListaPrincipal = (datos.listaDeudas || []).find(d => d.acreedor === deuda.acreedor);
-          if (deuda.pagadoEsteMes || (deudaEnListaPrincipal && deudaEnListaPrincipal.pagadoEsteMes) || pagadoLocal) return; 
-          
+          if (deuda.pagadoEsteMes || (deudaEnListaPrincipal && deudaEnListaPrincipal.pagadoEsteMes) || pagadoLocal) return;
+
           let estadoTxt = deuda.diasFaltantes < 0 ? "¡VENCIDO!" : (deuda.diasFaltantes === 0 ? "Vence HOY" : `En ${deuda.diasFaltantes} días`);
           listaA.innerHTML += `<li>
             <span style="color:var(--primary); line-height: 1.4; flex: 1; padding-right: 10px;">
@@ -403,14 +403,14 @@ function actualizarUI(datos) {
               <strong style="font-size:1.05rem;">${moneda.format(deuda.monto)}</strong>
             </span>
             <span class="texto-rojo" style="white-space: nowrap; font-weight: bold; text-align: right; display: flex; align-items: center;">${estadoTxt}</span>
-          </li>`; 
+          </li>`;
           numAlertas++;
         });
       }
 
       let badge = document.getElementById('badge-alertas');
-      if (numAlertas === 0) { 
-        listaA.innerHTML = '<li style="color:#10b981; font-weight:bold; justify-content:center; border:none;"><i class="fas fa-check-circle"></i> Todo en orden.</li>'; 
+      if (numAlertas === 0) {
+        listaA.innerHTML = '<li style="color:#10b981; font-weight:bold; justify-content:center; border:none;"><i class="fas fa-check-circle"></i> Todo en orden.</li>';
         badge.innerHTML = '<i class="fas fa-check"></i>'; badge.style.background = 'var(--success)';
       } else {
         badge.innerText = numAlertas; badge.style.background = 'var(--danger)';
@@ -437,12 +437,14 @@ function enviarEditInv(e) { e.preventDefault(); procesarEnvio({accion: 'editar_i
 function enviarEditTaller(e) { e.preventDefault(); procesarEnvio({accion: 'editar_taller', id: document.getElementById('et-id').value, cliente: document.getElementById('et-cliente').value, equipo: document.getElementById('et-equipo').value, falla: document.getElementById('et-falla').value, presupuesto: document.getElementById('et-presupuesto').value}, 'modal-edit-taller', 'form-edit-taller', 'btn-et'); }
 function enviarEditDeuda(e) { e.preventDefault(); procesarEnvio({accion: 'editar_deuda', fila: document.getElementById('ed-fila').value, acreedor: document.getElementById('ed-acreedor').value, montoTotal: document.getElementById('ed-total').value || "", montoCuota: document.getElementById('ed-monto').value || "", cuotaActual: document.getElementById('ed-cuota-actual').value || "", cuotasTotales: document.getElementById('ed-cuota-total').value || "", diaVenc: document.getElementById('ed-dia').value}, 'modal-edit-deuda', 'form-edit-deuda', 'btn-ed'); }
 
-function enviarPagoDeuda(e) { 
-  e.preventDefault(); 
+function enviarDeuda(e) { e.preventDefault(); procesarEnvio({accion: 'deuda', categoria: document.getElementById('deu-categoria').value, acreedor: document.getElementById('deu-acreedor').value, montoTotal: document.getElementById('deu-monto-total').value, cuotaActual: document.getElementById('deu-cuota-actual').value, cuotaTotal: document.getElementById('deu-cuota-total').value, montoCuota: document.getElementById('deu-monto-cuota').value, diaVencimiento: document.getElementById('deu-dia').value}, 'modal-deuda', 'form-deuda', 'btn-deu'); }
+
+function enviarPagoDeuda(e) {
+  e.preventDefault();
   let acreedor = document.getElementById('pag-acreedor').value;
   procesarEnvio(
-    {accion: 'pagar_deuda', fila: document.getElementById('pag-fila').value, acreedor: acreedor, monto: document.getElementById('pag-monto').value, metodo: document.getElementById('pag-metodo').value}, 
-    'modal-pago-confirmar', 'form-pago-deuda', 'btn-pagar', 
+    {accion: 'pagar_deuda', fila: document.getElementById('pag-fila').value, acreedor: acreedor, monto: document.getElementById('pag-monto').value, metodo: document.getElementById('pag-metodo').value},
+    'modal-pago-confirmar', 'form-pago-deuda', 'btn-pagar',
     function() {
       let pagosLocales = JSON.parse(localStorage.getItem("pagos_locales") || "{}");
       let fecha = new Date();
@@ -450,16 +452,16 @@ function enviarPagoDeuda(e) {
       pagosLocales[acreedor + "_" + mesActual] = true;
       localStorage.setItem("pagos_locales", JSON.stringify(pagosLocales));
     }
-  ); 
+  );
 }
 
 function procesarEnvio(datos, idModal, idForm, idBtn, callbackExito = null) {
-  let btn = document.getElementById(idBtn); let textoOrig = btn.innerText; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>...'; btn.disabled = true;
+  let btn = document.getElementById(idBtn); let textoOrig = btn.innerText; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true;
   fetch(URL_APPS_SCRIPT, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(datos) })
   .then(r => r.json()).then(res => {
-    if (res.exito) { 
-      cerrarModal(idModal); document.getElementById(idForm).reset(); mostrarToast("¡Guardado correctamente!"); 
-      if(callbackExito) callbackExito(); obtenerDatosSilencioso(); 
+    if (res.exito) {
+      cerrarModal(idModal); document.getElementById(idForm).reset(); mostrarToast("¡Guardado correctamente!");
+      if(callbackExito) callbackExito(); obtenerDatosSilencioso();
     } else alert("Error: " + res.error);
   }).catch(e => alert("Error de red.")).finally(() => { btn.innerText = textoOrig; btn.disabled = false; });
 }
