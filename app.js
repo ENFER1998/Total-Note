@@ -48,7 +48,6 @@ function actualizarUI(datos) {
     
     if (datos.error) {
         console.error("Error del backend:", datos.error);
-        // Si el backend tira error, usamos el caché local para que no desaparezca la info
         let cache = localStorage.getItem("totalNote_datos");
         if (cache) datos = JSON.parse(cache);
     }
@@ -60,21 +59,20 @@ function actualizarUI(datos) {
     let diaAct = fechaHoy.getDate().toString().padStart(2, '0');
     let mesAct = (fechaHoy.getMonth() + 1).toString().padStart(2, '0');
     let anioAct = fechaHoy.getFullYear();
-    let fechaFijaHoy = `${diaAct}/${mesAct}/${anioAct}`; // Ej: 21/09/2026
-    let sufijoMesActual = `/${mesAct}/${anioAct}`; // Ej: /09/2026
+    let fechaFijaHoy = `${diaAct}/${mesAct}/${anioAct}`;
+    let sufijoMesActual = `/${mesAct}/${anioAct}`;
     const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
     let nombreMesActual = nombresMeses[fechaHoy.getMonth()];
 
     // ========================================================
-    // 0. AUTO-REPARADOR DE FECHAS (Hace que la App sea invencible)
+    // 0. AUTO-REPARADOR DE FECHAS
     // ========================================================
     if (datos.listaCaja && datos.listaCaja.length > 0) {
       datos.listaCaja.forEach(mov => {
         let raw = String(mov.fecha || "").trim();
         if (!raw || raw === "Sin fecha" || raw === "") {
-          mov.fecha = fechaFijaHoy; // Repara al instante
+          mov.fecha = fechaFijaHoy;
         } else {
-          // Limpia formatos sucios como "8/9/2026, 7:01 p. m." a "08/09/2026"
           let s = raw.split(",")[0].split(" ")[0];
           let p = s.includes("/") ? s.split("/") : s.split("-");
           if (p.length >= 3) {
@@ -91,7 +89,7 @@ function actualizarUI(datos) {
     }
 
     // ========================================================
-    // CÁLCULOS REALES (Sobrescriben errores de Google Sheets)
+    // CÁLCULOS REALES
     // ========================================================
     let listaEgresosMes = (datos.listaCaja || []).filter(m => m.tipo === "Egreso" && m.fecha.includes(sufijoMesActual));
     let ingresosRealesMes = (datos.listaCaja || []).filter(m => m.tipo === "Ingreso" && m.fecha.includes(sufijoMesActual)).reduce((acc, m) => acc + (parseFloat(m.monto)||0), 0);
@@ -109,7 +107,7 @@ function actualizarUI(datos) {
     document.getElementById('val-taller').innerText = moneda.format(datos.proyeccionTaller || 0);
 
     // ========================================================
-    // DASHBOARD - GASTOS DEL MES (TOTAL DESPLEGABLE)
+    // DASHBOARD - GASTOS DEL MES
     // ========================================================
     let contGastos = document.getElementById('grafico-gastos');
     if (contGastos) {
@@ -456,12 +454,24 @@ function enviarPagoDeuda(e) {
 }
 
 function procesarEnvio(datos, idModal, idForm, idBtn, callbackExito = null) {
-  let btn = document.getElementById(idBtn); let textoOrig = btn.innerText; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true;
+  let btn = document.getElementById(idBtn); 
+  let textoOrig = btn.innerText; 
+  
+  // Agregamos SOLO la ruedita y forzamos la animación para que no se congele
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="animation: fa-spin 2s infinite linear;"></i>'; 
+  btn.disabled = true;
+  
   fetch(URL_APPS_SCRIPT, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(datos) })
   .then(r => r.json()).then(res => {
     if (res.exito) {
-      cerrarModal(idModal); document.getElementById(idForm).reset(); mostrarToast("¡Guardado correctamente!");
-      if(callbackExito) callbackExito(); obtenerDatosSilencioso();
+      cerrarModal(idModal); 
+      document.getElementById(idForm).reset(); 
+      mostrarToast("¡Guardado correctamente!");
+      if(callbackExito) callbackExito(); 
+      obtenerDatosSilencioso();
     } else alert("Error: " + res.error);
-  }).catch(e => alert("Error de red.")).finally(() => { btn.innerText = textoOrig; btn.disabled = false; });
+  }).catch(e => alert("Error de red.")).finally(() => { 
+    btn.innerText = textoOrig; 
+    btn.disabled = false; 
+  });
 }
